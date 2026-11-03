@@ -13,7 +13,7 @@
 
 ## Desarrollo con sandbox
 
-Usar Node.js 22.12 o superior dentro de la versión 22 y credenciales AWS con
+Usar Node.js 22.22 o superior dentro de la versión 22 y credenciales AWS con
 permisos para el sandbox. El perfil confirmado del proyecto es `student-cd`,
 en `us-east-1`. Conservar el identificador de sandbox usado para el ambiente
 existente. La etapa 04 añade recursos AgentCore: revisar los requisitos y
@@ -21,6 +21,8 @@ bloqueos de cuenta en [Integración del agente](agent-integration.md) antes de
 desplegar esa rama.
 
 ```bash
+nvm install
+nvm use
 npm ci
 npm run check
 npm run synth:backend
@@ -33,6 +35,12 @@ reales, observa cambios y genera `amplify_outputs.json` en la raíz. En otra ter
 ```bash
 npm run dev
 ```
+
+`.nvmrc` fija Node 22.23.4. El build de Hosting ejecuta `nvm install` y `nvm use`
+antes de instalar dependencias: seleccionar solo la versión mayor 22 puede
+elegir una versión preinstalada demasiado antigua para React Router. El
+lockfile debe validarse con `npm ci` desde una carpeta sin `node_modules`;
+una instalación incremental no detecta necesariamente resoluciones faltantes.
 
 Reiniciar Vite cuando se genere/cambie el archivo de outputs. Para desplegar una
 sola vez sin observación, usar `npm run sandbox:once -- --profile student-cd`.

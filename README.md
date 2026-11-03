@@ -29,9 +29,12 @@ requisitos antes de actualizar el sandbox.
 
 ## Desarrollo
 
-Node.js 22.12 o superior dentro de la versión 22 y npm.
+Node.js 22.22 o superior dentro de la versión 22 y npm. `.nvmrc` fija la versión
+22.23.4 usada para desarrollo y builds de Amplify.
 
 ```bash
+nvm install
+nvm use
 npm ci
 npm run dev
 ```
