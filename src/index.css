@@ -317,3 +317,26 @@
   .deck-tile { padding: 14px; }
   .deck-tile-title { font-size: 20px; }
 }
+
+/* Access and connected-data states share the deck workspace's visual system. */
+.auth-page { display: flex; align-items: center; justify-content: center; min-height: 100svh; padding: max(28px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom)); }
+.auth-panel { display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 440px; min-width: 0; }
+.auth-panel > .app-signature { margin-bottom: 6px; }
+.auth-heading .editor-symbol { margin-bottom: 20px; }
+.auth-heading h1 { margin-top: 12px; font-size: 46px; font-weight: 400; letter-spacing: -1px; }
+.auth-heading > p:last-child { margin-top: 14px; font-size: 14px; color: var(--muted-foreground); }
+.auth-form { display: flex; flex-direction: column; gap: 28px; }
+.auth-form [data-slot="input"] { min-height: 48px; border-radius: 14px; padding-inline: 14px; font-size: 16px; }
+.auth-form [data-slot="button"] { border-radius: 16px; }
+.auth-links { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.auth-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--link); font-size: 13px; text-align: center; }
+.auth-footnote { text-align: center; color: var(--muted-foreground); font-size: 11px; }
+.session-loading { display: flex; flex-direction: column; gap: 16px; padding-block: 36px; }
+.account-controls { width: 100%; padding-block: 10px; border-top: 1px solid var(--border); }
+.account-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.account-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.deck-loading-tile { grid-row: span 12; border-radius: 24px; }
+.deck-loading-tile:nth-child(4n + 2), .deck-loading-tile:nth-child(4n + 3) { grid-row: span 13; }
+.deck-load-error { display: flex; flex: 1; flex-direction: column; align-items: flex-start; justify-content: center; gap: 20px; padding-block: 36px; }
+.detail-loading { display: flex; flex-direction: column; gap: 20px; padding-top: 60px; }
+@media (max-width: 359px) { .auth-heading h1 { font-size: 38px; } }

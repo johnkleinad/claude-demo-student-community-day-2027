@@ -23,6 +23,9 @@
 
 ## Persistencia de esta etapa
 
+Esta sección describe la vista previa histórica de la etapa 02. La etapa 03
+la sustituye por [autenticación y decks en Amplify Data](auth-and-decks.md).
+
 El layout interactivo usa almacenamiento local bajo
 `community-study.layout-decks.v1`, separado del cliente de Amplify. La interfaz
 lo indica como vista previa guardada en el dispositivo. La existencia de

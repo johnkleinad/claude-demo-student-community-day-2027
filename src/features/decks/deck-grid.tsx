@@ -1,9 +1,9 @@
 import { ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { DeckCover } from './deck-cover'
-import type { PreviewDeck } from './use-decks'
+import type { StudyDeck } from './deck-repository'
 
-export function DeckGrid({ decks, activeId }: { decks: PreviewDeck[]; activeId?: string }) {
+export function DeckGrid({ decks, activeId }: { decks: StudyDeck[]; activeId?: string }) {
   return (
     <div className="deck-grid" aria-label="Tus decks">
       {decks.map((deck) => (
