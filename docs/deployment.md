@@ -52,7 +52,7 @@ sola vez sin observación, usar `npm run sandbox:once -- --profile TU_PERFIL`.
 5. Ejecutar el build. La fase backend corre `ampx pipeline-deploy`, que genera
    los outputs de ese ambiente. Luego `build:hosting` comprueba los recursos y
    compila el frontend con ellos.
-6. Verificar la URL de la app y abrir directamente `/acerca`, además de recargarla.
+6. Verificar la URL de la app y abrir directamente `/decks/new`, además de recargarla.
    Comprobar que CSS, fuentes e imágenes se sirven como archivos, no como HTML.
 7. En la etapa 03, completar las pruebas reales de registro, confirmación por
    correo, login, aislamiento entre dos usuarios, carga y lectura privada de
