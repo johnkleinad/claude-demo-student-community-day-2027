@@ -104,6 +104,8 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Keep touch scrolling while disabling pinch and double-tap zoom. */
+    touch-action: pan-x pan-y;
   }
 
   html {
