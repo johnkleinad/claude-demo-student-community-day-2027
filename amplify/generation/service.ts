@@ -50,11 +50,14 @@ export async function processGeneration(id: string, api: WorkerDependencies) {
     const deck = await api.getDeck(job.deckId)
     if (!deck || deck.owner !== job.owner || deck.archived) throw new GenerationError('El deck ya no está disponible para generar tarjetas.')
     const materials = []
+    const authorized = []
     for (const id of job.materialIds) {
       const material = assertMaterial(await api.getMaterial(id), job)
-      materials.push(await api.prepare(material))
+      authorized.push(material)
     }
-    if (materials.filter((item) => item.contentType === 'application/pdf').length > 5) throw new GenerationError('Genera tarjetas con un máximo de 5 PDF a la vez.')
+    if (authorized.filter((item) => item.contentType.startsWith('image/')).length > 5) throw new GenerationError('Genera tarjetas con un máximo de 5 imágenes a la vez.')
+    if (authorized.filter((item) => item.contentType === 'application/pdf').length > 5) throw new GenerationError('Genera tarjetas con un máximo de 5 PDF a la vez.')
+    for (const material of authorized) materials.push(await api.prepare(material))
     if (materials.reduce((sum, item) => sum + item.sizeBytes, 0) > 20 * 1024 * 1024) throw new GenerationError('Selecciona materiales que sumen hasta 20 MB para esta generación.')
     const request = generationRequestSchema.parse({ deckId: job.deckId, materialIds: job.materialIds, requestId: job.requestId,
       preferences: { language: job.language, cardCount: job.cardCount, ...(job.focus ? { focus: job.focus } : {}) } })

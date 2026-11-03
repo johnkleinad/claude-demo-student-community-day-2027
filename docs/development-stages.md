@@ -23,7 +23,7 @@
 | 02 | `feat/02-responsive-layout` | Interfaz construida con el usuario, identidad visual del evento y estados responsivos. |
 | 03 | `feat/03-materials-and-decks` | Registro/inicio de sesión, perfiles y creación/consulta de decks privados. |
 | 03b | `feat/03b-material-uploads` | Selección, vista previa, carga privada de imágenes/PDF y registros Material con reintentos. |
-| 04 | `feat/04-agentcore-generation` | Integración y UI implementadas; verificadas localmente. Despliegue y prueba real AWS pendientes de permisos AgentCore y verificación de cuenta Bedrock. |
+| 04 | `feat/04-agentcore-generation` | Integración y UI implementadas; verificadas localmente. Amazon Nova 2 Lite responde en Bedrock. Despliegue y prueba completa pendientes de permisos AgentCore. |
 | 05 | `feat/05-study-sessions` | Práctica de tarjetas, reanudación e historial de sesiones. |
 | 06 | `docs/06-reproduction-spec` | `spec.md` final que describa el resultado real para reproducirlo con un solo prompt. |
 

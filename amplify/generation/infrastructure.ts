@@ -44,7 +44,7 @@ export function configureGeneration(scope: Construct, resources: {
   }) })
   code.grantRead(role)
   resources.bucket.grantRead(role, 'materials/*')
-  const baseModel = 'anthropic.claude-haiku-4-5-20251001-v1:0'
+  const baseModel = 'amazon.nova-2-lite-v1:0'
   const modelId = `us.${baseModel}`
   role.addToPolicy(new PolicyStatement({ actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'], resources: [
     stack.formatArn({ service: 'bedrock', resource: 'inference-profile', resourceName: modelId }),
@@ -100,5 +100,5 @@ export function configureGeneration(scope: Construct, resources: {
     batchSize: 1, retryAttempts: 20, maxRecordAge: Duration.hours(4), onFailure: new SqsDlq(failures),
     filters: [FilterCriteria.filter({ eventName: FilterRule.isEqual('INSERT') })],
   }))
-  return { runtimeArn: runtime.attrAgentRuntimeArn, endpointArn: endpoint.attrAgentRuntimeEndpointArn }
+  return { runtimeArn: runtime.attrAgentRuntimeArn, endpointArn: endpoint.attrAgentRuntimeEndpointArn, modelId }
 }

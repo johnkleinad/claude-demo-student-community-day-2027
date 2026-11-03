@@ -19,6 +19,8 @@ export function GenerationPanel({ state, materials, uploading }: {
   const [language, setLanguage] = useState<'es' | 'en'>('es')
   const ready = materials.filter((material) => material.uploadStatus === 'UPLOADED')
   const selected = ready.filter((material) => !excluded.has(material.id))
+  const tooManyImages = selected.filter((material) => material.contentType.startsWith('image/')).length > 5
+  const tooManyPdfs = selected.filter((material) => material.contentType === 'application/pdf').length > 5
   const active = state.jobs.find(jobIsActive)
   const latest = state.jobs[0]
   const busy = state.starting || !!active
@@ -46,7 +48,7 @@ export function GenerationPanel({ state, materials, uploading }: {
                   <span>{material.filename}</span><span className="generation-file-kind">{material.contentType === 'application/pdf' ? 'PDF' : 'IMG'}</span>
                 </label>)}
               </div> : <p className="generation-intro">Sube tu primer material para empezar.</p>}
-              <FieldDescription>Hasta 10 materiales: imágenes de 3.75 MB o PDF de 4.5 MB. Máximo 5 PDF y 20 MB en total.</FieldDescription>
+              <FieldDescription>Hasta 5 imágenes de 3.75 MB y 5 PDF de 4.5 MB. Máximo 20 MB en total.</FieldDescription>
             </Field>
             <div className="generation-preferences">
               <Field><FieldLabel htmlFor="card-count">Número de tarjetas</FieldLabel><Input id="card-count" name="cardCount" type="number" inputMode="numeric" min={1} max={50} defaultValue={10} required disabled={busy} /></Field>
@@ -54,7 +56,8 @@ export function GenerationPanel({ state, materials, uploading }: {
             </div>
             <Field><FieldLabel htmlFor="card-focus">¿En qué quieres enfocarte? <span className="generation-optional">Opcional</span></FieldLabel><Input id="card-focus" name="focus" maxLength={500} placeholder="Ej. servicios de AWS y sus diferencias" disabled={busy} /><FieldDescription>Generaremos menos tarjetas si el material no alcanza para la cantidad solicitada.</FieldDescription></Field>
           </FieldGroup>
-          <Button type="submit" className="min-h-12" disabled={busy || uploading || !selected.length || selected.length > 10}><Sparkles data-icon="inline-start" />{state.starting ? 'Iniciando…' : active ? 'Generación en curso' : 'Generar tarjetas'}</Button>
+          {(tooManyImages || tooManyPdfs) && <p className="material-error" role="alert">Selecciona un máximo de 5 imágenes y 5 PDF para esta generación.</p>}
+          <Button type="submit" className="min-h-12" disabled={busy || uploading || !selected.length || selected.length > 10 || tooManyImages || tooManyPdfs}><Sparkles data-icon="inline-start" />{state.starting ? 'Iniciando…' : active ? 'Generación en curso' : 'Generar tarjetas'}</Button>
         </form>}
       {state.submitError && <Alert variant="destructive"><AlertDescription>{state.submitError}</AlertDescription></Alert>}
       {active && <div className="generation-status" role="status" aria-live="polite"><LoaderCircle className="animate-spin" aria-hidden="true" /><div><p>{active.status === 'QUEUED' ? 'Tus materiales están en la fila.' : 'Estamos conectando los conceptos.'}</p><span>Puedes salir de este deck y volver más tarde.</span></div></div>}

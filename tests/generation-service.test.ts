@@ -109,6 +109,23 @@ test('los fallos del proveedor no exponen detalles internos ni producen tarjetas
   assert.equal(f.errors[0].includes('Secret'), false)
 })
 
+test('Nova rechaza más de cinco imágenes o cinco PDF antes de descargar o invocar', async () => {
+  for (const contentType of ['image/png', 'application/pdf']) {
+    const f = fixture()
+    const materialIds = Array.from({ length: 6 }, (_, index) => `material-${index}`)
+    const read = async (id: string) => ({ ...image, id, contentType,
+      storagePath: `materials/${identityId}/deck-1/${id}.${contentType === 'image/png' ? 'png' : 'pdf'}` })
+    f.requestApi.getMaterial = read
+    f.workerApi.getMaterial = read
+    f.workerApi.prepare = async () => { throw new Error('Should not download an excessive batch') }
+    const id = await requestGeneration({ ...request, materialIds }, owner, 'validated-appsync-jwt', f.requestApi)
+    await processGeneration(id, f.workerApi)
+    assert.equal(f.invokes(), 0)
+    assert.equal(f.jobs.get(id)?.status, 'FAILED')
+    assert.match(f.errors[0], /máximo de 5/)
+  }
+})
+
 test('si falla el guardado final y también el estado de error, el evento se reintenta', async () => {
   const f = fixture(); const id = await f.reserve()
   f.workerApi.complete = async () => { throw new Error('Data unavailable') }

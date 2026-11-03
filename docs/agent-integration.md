@@ -10,10 +10,13 @@ Comprobaciones de cuenta realizadas el 3 de noviembre de 2026, con `student-cd`
 en `us-east-1`:
 
 - STS confirmó una sesión válida.
-- Bedrock confirmó el perfil `us.anthropic.claude-haiku-4-5-20251001-v1:0`,
+- Bedrock confirmó el perfil de Amazon Nova 2 Lite `us.amazon.nova-2-lite-v1:0`,
   con destinos `us-east-1`, `us-east-2` y `us-west-2`.
-- Una invocación mínima de Converse fue rechazada: AWS indica que la cuenta
-  está en verificación. No se obtuvo una respuesta del modelo.
+- Una invocación mínima real de Converse con Nova 2 Lite devolvió `OK`.
+- Una prueba real de Strands con Nova 2 Lite y un PDF sintético generó dos
+  tarjetas. La salida estructurada y sus referencias a la página 1 pasaron
+  `validateGenerationResult`. Esta prueba llamó a Bedrock directamente desde
+  el entorno de desarrollo; todavía no prueba el despliegue AgentCore.
 - `ListAgentRuntimes` fue rechazado porque el rol de SSO no tiene ese permiso.
   No se intentó cambiar el permission set ni conceder permisos al propio rol.
 
@@ -41,7 +44,9 @@ en `us-east-1`:
    rutas del manifiesto, con `IfMatch` para rechazar objetos que hayan cambiado,
    y vuelve a validar su contenido. No acepta URL externas ni usa herramientas
    de navegación o ejecución de código.
-8. Bedrock recibe imágenes y documentos PDF; para PDF se habilitan citas.
+8. Bedrock recibe imágenes y documentos PDF con Amazon Nova 2 Lite. Las fuentes
+   y páginas se devuelven en el esquema de tarjetas; no se activa el parámetro
+   de citas nativas de documentos de otros proveedores.
    Un agente nuevo por invocación evita compartir conversación entre trabajos.
    Se limita el tiempo, número de turnos y tokens. El prompt pide verificar
    las respuestas y tratar las instrucciones incrustadas como datos.
@@ -102,7 +107,7 @@ adicional. No se adjuntó una política administrativa a las funciones.
 ## Límites de esta demo
 
 Storage sigue admitiendo archivos de 20 MiB. Para generación se aplican límites
-menores: 10 materiales, imágenes de hasta 3.75 MiB y 8000 × 8000 píxeles, hasta
+menores: 10 materiales, hasta 5 imágenes de 3.75 MiB y 8000 × 8000 píxeles, hasta
 5 PDF de 4.5 MiB cada uno, entre 1 y 100 páginas por PDF y 20 MiB totales.
 Los límites se validan antes de invocar al agente; un modelo puede imponer
 restricciones adicionales. No se comprimen imágenes ni se dividen PDF automáticamente.
@@ -122,8 +127,7 @@ indefinidamente ni se oculta un fallo como generación exitosa.
 
 ## Despliegue pendiente
 
-Antes de ejecutar el sandbox, completar la verificación de la cuenta para
-Bedrock y habilitar los permisos de despliegue AgentCore en el permission set
+Antes de ejecutar el sandbox, habilitar los permisos de despliegue AgentCore en el permission set
 SSO y en el rol de CloudFormation usado por Amplify. Esta etapa incorpora
 `AWS::BedrockAgentCore::Runtime` y `RuntimeEndpoint`, sus roles, políticas,
 artefactos S3, logs/KMS, una tabla de control y una cola de fallos. El rol de
@@ -145,7 +149,7 @@ npm run sandbox -- --profile student-cd
 
 Conservar el identificador del sandbox existente si se usó uno personalizado.
 Al terminar, los outputs incluirán `custom.generation` con los ARN del Runtime
-y del endpoint. Reiniciar Vite para cargar los outputs nuevos. La interfaz informa
+y del endpoint y el modelo Nova configurado. Reiniciar Vite para cargar los outputs nuevos. La interfaz informa
 que hay que actualizar el sandbox si los outputs aún no contienen la mutación.
 
 Verificar que Runtime y endpoint `demo` estén READY, hacer una generación real

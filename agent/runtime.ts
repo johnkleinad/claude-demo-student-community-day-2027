@@ -30,6 +30,7 @@ export async function generate(payload: unknown) {
   const ids = input.materials.map((material) => material.id)
   if (new Set(ids).size !== ids.length || ids.length !== input.request.materialIds.length || input.request.materialIds.some((id) => !ids.includes(id))) throw new Error('Material manifest mismatch')
   if (input.materials.filter((material) => material.contentType === 'application/pdf').length > 5 ||
+      input.materials.filter((material) => material.contentType.startsWith('image/')).length > 5 ||
       input.materials.reduce((sum, material) => sum + material.sizeBytes, 0) > 20 * 1024 * 1024) throw new Error('Material budget exceeded')
   const content: ContentBlockData[] = [{ text: JSON.stringify({ language: input.request.preferences.language,
     maxCards: input.request.preferences.cardCount, focus: input.request.preferences.focus ?? 'Conceptos clave' }) }]
@@ -48,7 +49,7 @@ export async function generate(payload: unknown) {
     const metadata = await inspectGenerationBytes(bytes, material.contentType)
     validatedMaterials.push({ ...material, ...metadata })
     content.push({ text: `Material autorizado: ${material.id}${metadata.pageCount ? `, ${metadata.pageCount} páginas` : ''}.` })
-    if (material.contentType === 'application/pdf') content.push({ document: { name: `Material ${validatedMaterials.length}`, format: 'pdf', source: { bytes }, citations: { enabled: true } } })
+    if (material.contentType === 'application/pdf') content.push({ document: { name: `Material ${validatedMaterials.length}`, format: 'pdf', source: { bytes } } })
     else content.push({ image: { format: material.contentType === 'image/jpeg' ? 'jpeg' : material.contentType === 'image/png' ? 'png' : 'webp', source: { bytes } } })
   }
   // A new agent per invocation prevents conversation state crossing jobs/users.
