@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { ArrowLeft, Plus, Sparkles } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
+import { AccountControls } from '@/features/auth/account-controls'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { cn } from '@/lib/utils'
 import { DeckCover } from './deck-cover'
@@ -13,11 +16,11 @@ import { useDecks } from './use-decks'
 export function DeckWorkspace() {
   const { deckId } = useParams()
   const navigate = useNavigate()
-  const { decks, error, createDeck } = useDecks()
+  const { decks, loading, error, reload, createDeck } = useDecks()
   const detailRef = useRef<HTMLElement>(null)
   const isCreating = deckId === 'new'
   const selectedDeck = deckId ? decks.find((deck) => deck.id === deckId) : decks[0]
-  const isEmpty = decks.length === 0 && !deckId
+  const isEmpty = decks.length === 0 && !deckId && !loading && !error
 
   useEffect(() => {
     document.title = `${isCreating ? 'Nuevo deck' : selectedDeck?.title ?? 'Mis decks'} · Community Study`
@@ -44,10 +47,20 @@ export function DeckWorkspace() {
                 </Link>
               )}
             </div>
-            <p className="library-subtitle">{decks.length === 0 ? 'Cloud, código e IA. A tu ritmo.' : `${decks.length} ${decks.length === 1 ? 'deck para tu próximo reto técnico.' : 'decks para tus próximos retos técnicos.'}`}</p>
+            <p className="library-subtitle">{loading ? 'Cargando tus decks…' : decks.length === 0 ? 'Cloud, código e IA. A tu ritmo.' : `${decks.length} ${decks.length === 1 ? 'deck para tu próximo reto técnico.' : 'decks para tus próximos retos técnicos.'}`}</p>
           </header>
 
-          {decks.length === 0 ? (
+          {loading ? (
+            <div className="deck-grid" role="status" aria-label="Cargando decks">
+              {[0, 1, 2, 3].map((item) => <Skeleton key={item} className="deck-loading-tile" />)}
+              <span className="sr-only">Cargando tus decks…</span>
+            </div>
+          ) : error ? (
+            <div className="deck-load-error">
+              <Alert variant="destructive"><AlertTitle>No pudimos cargar tu colección</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
+              <Button variant="outline" className="min-h-11" onClick={() => { void reload() }}>Reintentar</Button>
+            </div>
+          ) : decks.length === 0 ? (
             <Empty className="library-empty">
               <EmptyMedia><DeckCover large /></EmptyMedia>
               <EmptyContent>
@@ -63,8 +76,8 @@ export function DeckWorkspace() {
           ) : <DeckGrid decks={decks} activeId={selectedDeck?.id} />}
 
           <footer className="library-footer">
-            {error && <p role="status">{error}</p>}
-            <p><span className="status-dot" aria-hidden="true" /> Vista previa · guardado en este dispositivo</p>
+            <AccountControls />
+            <p><span className="status-dot" aria-hidden="true" /> {loading ? 'Sincronizando tus decks…' : error ? 'Colección sin actualizar' : 'Guardado en tu cuenta'}</p>
             <span className="event-signature">Student Community Day México</span>
           </footer>
         </section>
@@ -75,9 +88,13 @@ export function DeckWorkspace() {
               <Link to="/" className="back-to-library"><ArrowLeft aria-hidden="true" /> Mis decks</Link>
               <span className="detail-caption"><Sparkles aria-hidden="true" /> Un poco más cerca de entenderlo.</span>
             </nav>
-            {isCreating ? (
-              <NewDeck onCreate={(title, description) => {
-                const deck = createDeck(title, description)
+            {loading ? (
+              <div className="detail-loading" role="status" aria-label="Cargando el deck"><Skeleton className="h-12 w-3/4" /><Skeleton className="h-5 w-1/2" /><span className="sr-only">Cargando el deck…</span></div>
+            ) : error ? (
+              <div className="deck-load-error"><Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert><Button variant="outline" className="min-h-11" onClick={() => { void reload() }}>Reintentar</Button></div>
+            ) : isCreating ? (
+              <NewDeck onCreate={async (title, description) => {
+                const deck = await createDeck(title, description)
                 navigate(`/decks/${deck.id}`, { replace: true })
                 return deck
               }} />

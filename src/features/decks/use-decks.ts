@@ -1,59 +1,50 @@
-import { useState } from 'react'
-import { z } from 'zod'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { getDataClient } from '@/lib/data'
+import { useAuth } from '@/features/auth/auth-context'
+import { createDeckRepository, type StudyDeck } from './deck-repository'
 
-export const DECKS_STORAGE_KEY = 'community-study.layout-decks.v1'
-
-const deckSchema = z.object({
-  id: z.string().uuid(),
-  title: z.string().trim().min(1).max(80),
-  description: z.string().trim().max(200),
-  createdAt: z.string().datetime(),
-  color: z.enum(['violet', 'magenta', 'cyan', 'orange']),
-})
-
-export type PreviewDeck = z.infer<typeof deckSchema>
-const colors: PreviewDeck['color'][] = ['violet', 'magenta', 'cyan', 'orange']
-
-function createDeckId() {
-  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
-  // randomUUID requires HTTPS; getRandomValues also works over local-network HTTP.
-  const bytes = crypto.getRandomValues(new Uint8Array(16))
-  bytes[6] = (bytes[6] & 0x0f) | 0x40
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
-}
-
-function readDecks(): { decks: PreviewDeck[]; error: string | null } {
-  try {
-    const saved = localStorage.getItem(DECKS_STORAGE_KEY)
-    return { decks: saved ? z.array(deckSchema).parse(JSON.parse(saved)) : [], error: null }
-  } catch {
-    return { decks: [], error: 'No se pudieron leer los decks guardados en este dispositivo.' }
-  }
-}
-
-/** Layout preview storage. Amplify persistence belongs to the next stage. */
 export function useDecks() {
-  const [state, setState] = useState(readDecks)
+  const { user } = useAuth()
+  const [decks, setDecks] = useState<StudyDeck[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const lifecycleRef = useRef({ version: 0, mounted: false })
 
-  function createDeck(title: string, description: string) {
-    const deck = deckSchema.parse({
-      id: createDeckId(),
-      title,
-      description,
-      createdAt: new Date().toISOString(),
-      color: colors[state.decks.length % colors.length],
-    })
-    const decks = [...state.decks, deck]
+  const reload = useCallback(async () => {
+    const request = ++lifecycleRef.current.version
+    setLoading(true)
+    setError(null)
     try {
-      localStorage.setItem(DECKS_STORAGE_KEY, JSON.stringify(decks))
+      const result = await createDeckRepository(getDataClient().models.Deck).list()
+      if (lifecycleRef.current.mounted && request === lifecycleRef.current.version) setDecks(result)
     } catch {
-      throw new Error('No pudimos guardar el deck. Revisa el almacenamiento del navegador e inténtalo otra vez.')
+      if (lifecycleRef.current.mounted && request === lifecycleRef.current.version) {
+        setDecks([])
+        setError('No pudimos cargar tus decks. Revisa tu conexión e inténtalo otra vez.')
+      }
+    } finally {
+      if (lifecycleRef.current.mounted && request === lifecycleRef.current.version) setLoading(false)
     }
-    setState({ decks, error: null })
-    return deck
+  }, [])
+
+  useEffect(() => {
+    const lifecycle = lifecycleRef.current
+    lifecycle.mounted = true
+    let active = true
+    queueMicrotask(() => { if (active) void reload() })
+    return () => { active = false; lifecycle.mounted = false; ++lifecycle.version }
+  }, [user?.userId, reload])
+
+  async function createDeck(title: string, description: string) {
+    try {
+      const deck = await createDeckRepository(getDataClient().models.Deck).create(title, description)
+      if (!lifecycleRef.current.mounted) throw new Error('La sesión cambió. Vuelve a intentarlo.')
+      setDecks((current) => [...current.filter((item) => item.id !== deck.id), deck])
+      return deck
+    } catch {
+      throw new Error('No pudimos guardar tu deck. Revisa tu conexión e inténtalo otra vez.')
+    }
   }
 
-  return { ...state, createDeck }
+  return { decks, loading, error, reload, createDeck }
 }

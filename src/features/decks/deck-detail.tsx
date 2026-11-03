@@ -1,9 +1,9 @@
 import { Layers3 } from 'lucide-react'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { DeckCover } from './deck-cover'
-import type { PreviewDeck } from './use-decks'
+import type { StudyDeck } from './deck-repository'
 
-export function DeckDetail({ deck }: { deck: PreviewDeck }) {
+export function DeckDetail({ deck }: { deck: StudyDeck }) {
   return (
     <div className="deck-detail" data-color={deck.color}>
       <header className="deck-detail-heading">

@@ -27,8 +27,9 @@
 | 06 | `docs/06-reproduction-spec` | `spec.md` final que describa el resultado real para reproducirlo con un solo prompt. |
 
 La etapa 01 incluye también el scaffold del stack realizado antes de definir
-la temática. Por ahora solo existe la rama 01. Las ramas futuras se crean al
-comenzar su etapa, partiendo de la versión integrada más reciente de `main`.
+la temática. Ya existen las ramas 01, 02 y 03. Cada etapa parte del último
+trabajo validado; si la etapa anterior aún no está integrada en `main`, su rama
+sirve de base para conservar la secuencia.
 `main` mantiene la versión estable. No se fusiona ni publica una etapa sin
 verificarla. Los nombres se pueden ajustar si cambia el alcance.
 
