@@ -30,3 +30,9 @@ dist-ssr
 .agents/
 .codex/
 .aws/
+
+# Amplify generated files
+.amplify/
+amplify_outputs.*
+cdk.out/
+.npm/
