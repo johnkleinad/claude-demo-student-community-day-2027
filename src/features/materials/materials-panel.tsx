@@ -8,10 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { MATERIAL_FILE_ACCEPT } from '../../../shared/materials'
 import type { StudyMaterial } from './material-types'
 import { MaterialRow, UploadRow } from './material-row'
-import { useMaterials } from './use-materials'
+import type { useMaterials } from './use-materials'
 
-export function MaterialsPanel({ deckId }: { deckId: string }) {
-  const state = useMaterials(deckId)
+export function MaterialsPanel({ state }: { state: ReturnType<typeof useMaterials> }) {
   const fileInput = useRef<HTMLInputElement>(null)
   const resume = useRef<StudyMaterial | undefined>(undefined)
   const [dragging, setDragging] = useState(false)

@@ -382,6 +382,43 @@
 .deck-cards-empty { flex: none; border-top: 1px solid var(--border); border-radius: 0; margin-top: 28px; padding: 36px 0; }
 .deck-cards-empty [data-slot="empty-title"] { font-size: 24px; font-weight: 400; }
 .deck-cards-empty [data-slot="empty-description"] { font-size: 13px; line-height: 1.8; max-width: 45ch; }
+
+.generation-panel { display: flex; flex-direction: column; gap: 24px; margin-top: 36px; padding-top: 32px; border-top: 1px solid var(--border); }
+.generation-panel h2, .generated-cards h2 { margin-top: 8px; font-size: 32px; font-weight: 400; }
+.generation-intro { max-width: 62ch; margin-top: 12px; color: var(--muted-foreground); font-size: 14px; }
+.generation-form { display: flex; flex-direction: column; gap: 24px; }
+.generation-form > button { align-self: flex-start; }
+.generation-materials { display: flex; flex-direction: column; gap: 4px; }
+.generation-material-option { display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 10px 12px; border-radius: 10px; cursor: pointer; background: var(--card); }
+.generation-material-option > span:first-of-type { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.generation-file-kind { margin-left: auto; color: var(--muted-foreground); font-size: 10px; }
+.generation-preferences { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.generation-form [data-slot="input"], .generation-form [data-slot="native-select"] { min-height: 48px; border-radius: 14px; padding-inline: 14px; font-size: 16px; }
+.generation-form [data-slot="native-select-wrapper"] { width: 100%; }
+.generation-optional { color: var(--muted-foreground); font-size: 11px; font-weight: 400; }
+.generation-status { display: flex; align-items: flex-start; gap: 14px; padding: 20px; border: 1px solid var(--border); border-radius: 18px; }
+.generation-status > svg { flex-shrink: 0; color: var(--link); }
+.generation-status p { font-size: 14px; }
+.generation-status span { display: block; margin-top: 6px; color: var(--muted-foreground); font-size: 12px; }
+.generation-complete { display: flex; align-items: center; gap: 10px; color: var(--link); font-size: 13px; }
+.generation-complete svg { width: 18px; height: 18px; flex-shrink: 0; }
+.generated-cards { margin-top: 36px; padding-top: 32px; border-top: 1px solid var(--border); }
+.generated-cards header > p:last-child { margin-top: 12px; color: var(--muted-foreground); font-size: 13px; }
+.generated-card-list { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+.generated-card { border: 1px solid var(--border); border-radius: 18px; background: var(--card); }
+.generated-card summary { display: flex; align-items: baseline; gap: 16px; padding: 20px; min-height: 64px; cursor: pointer; list-style: none; }
+.generated-card summary::-webkit-details-marker { display: none; }
+.generated-card summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 18px; }
+.generated-card-number { color: var(--link); font-size: 12px; }
+.generated-card h3 { flex: 1; min-width: 0; font-size: 22px; font-weight: 400; }
+.generated-card-toggle { color: var(--link); font-size: 22px; transition: transform 160ms ease; }
+.generated-card[open] .generated-card-toggle { transform: rotate(45deg); }
+.generated-card-answer { padding: 0 20px 24px; overflow-wrap: anywhere; font-size: 14px; white-space: pre-wrap; }
+.generated-card-explanation { margin-top: 16px; color: var(--muted-foreground); }
+.generated-card-sources { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); white-space: normal; }
+.generated-card-sources li { display: flex; align-items: flex-start; gap: 10px; color: var(--link); font-size: 11px; }
+.generated-card-sources svg { width: 16px; height: 16px; flex-shrink: 0; }
+.generated-card-sources blockquote { margin-top: 4px; color: var(--muted-foreground); font-size: 12px; }
 @media (max-width: 479px) {
   .material-row { padding: 12px; gap: 10px; grid-template-columns: 48px minmax(0, 1fr) 36px; }
   .material-thumbnail { width: 48px; height: 64px; }

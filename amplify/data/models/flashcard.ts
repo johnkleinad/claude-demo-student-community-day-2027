@@ -8,8 +8,6 @@ export const Flashcard = a.model({
   explanation: a.string(),
   sources: a.ref('SourceReference').required().array().required(),
   generationJobId: a.id(),
-  owner: a.string().authorization((allow) => [
-    allow.owner().identityClaim('sub').to(['read', 'delete']),
-  ]),
+  owner: a.string(),
 }).secondaryIndexes((index) => [index('deckId')])
-  .authorization((allow) => [allow.owner().identityClaim('sub')])
+  .authorization((allow) => [allow.owner().identityClaim('sub').to(['read'])])

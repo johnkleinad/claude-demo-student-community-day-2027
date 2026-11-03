@@ -1,6 +1,6 @@
 import { a } from '@aws-amplify/backend'
 
-// Jobs will be created/updated by the future generation backend, never by the browser.
+// Only the generation backend may create or update jobs.
 export const GenerationJob = a.model({
   requestId: a.string().required(),
   deckId: a.id().required(),
@@ -12,6 +12,7 @@ export const GenerationJob = a.model({
   focus: a.string(),
   errorMessage: a.string(),
   completedAt: a.datetime(),
+  generatedCount: a.integer(),
   owner: a.string(),
 }).secondaryIndexes((index) => [index('deckId')])
   .authorization((allow) => [allow.owner().identityClaim('sub').to(['read'])])

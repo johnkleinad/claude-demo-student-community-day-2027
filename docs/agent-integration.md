@@ -1,99 +1,178 @@
-# Frontera de integración del agente
+# Generación con AgentCore y Bedrock, etapa 04
 
-## Estado actual
+## Estado
 
-Hay contratos y modelos preparados. No existen todavía función de generación,
-cola, runtime AgentCore, agente Strands ni invocaciones a Bedrock. Ninguna ruta
-simula una generación exitosa. No hay credenciales ni ARN de modelos en el
-frontend.
+Rama `feat/04-agentcore-generation`. Implementados frontend, mutación autenticada,
+funciones, agente Strands y definición de infraestructura. La síntesis es local;
+esta etapa todavía no se ha desplegado ni verificado de extremo a extremo en AWS.
 
-## Datos y autorización
+Comprobaciones de cuenta realizadas el 3 de noviembre de 2026, con `student-cd`
+en `us-east-1`:
 
-`amplify/data/resource.ts` define:
+- STS confirmó una sesión válida.
+- Bedrock confirmó el perfil `us.anthropic.claude-haiku-4-5-20251001-v1:0`,
+  con destinos `us-east-1`, `us-east-2` y `us-west-2`.
+- Una invocación mínima de Converse fue rechazada: AWS indica que la cuenta
+  está en verificación. No se obtuvo una respuesta del modelo.
+- `ListAgentRuntimes` fue rechazado porque el rol de SSO no tiene ese permiso.
+  No se intentó cambiar el permission set ni conceder permisos al propio rol.
 
-- `Deck`: título, descripción y archivo lógico (`archived`).
-- `Material`: deck, nombre original, ruta S3, MIME, tamaño, páginas opcionales
-  y estado de carga. Crear registro `PENDING`, subir, y marcar `UPLOADED`.
-- `Flashcard`: pregunta, respuesta, explicación, fuentes e ID del trabajo.
-- `StudySession`: deck, orden de tarjetas, fechas, estado y valoraciones.
-- `GenerationJob`: solicitud, deck, materiales, preferencias, estado y error.
-  El usuario solo puede consultar sus trabajos; la creación y actualización
-  quedan para el futuro backend de generación.
+## Flujo implementado
 
-Los registros usan el `sub` del User Pool en `owner`. En los modelos editables,
-el campo owner no puede reasignarse con una actualización. El frontend usa
-Cognito User Pools. No hay API key pública ni autorización de lectura compartida.
+1. El usuario selecciona materiales guardados, cantidad (1–50), idioma (es/en)
+   y enfoque opcional. La app llama a `generateCards(request)` con Cognito.
+2. La Lambda obtiene el `sub` del contexto AppSync. No acepta propietario,
+   bucket, ruta ni ARN en la solicitud. Resuelve el Identity Pool ID mediante
+   `GetId` usando el JWT autenticado y los pools del ambiente.
+3. Lee deck y materiales con consistencia fuerte y comprueba propietario,
+   pertenencia, estado UPLOADED y ruta privada exacta. Genera un ID SHA-256
+   por usuario/requestId y una huella de los parámetros normalizados.
+4. Una transacción crea GenerationJob QUEUED y un bloqueo temporal por
+   usuario/deck. Un requestId repetido con los mismos parámetros devuelve el
+   mismo trabajo. Una respuesta ambigua se recupera consultando ese ID.
+5. DynamoDB Streams entrega el INSERT al worker. Este toma un lease condicional
+   y renueva el bloqueo del deck en una transacción; repeticiones de eventos
+   no vuelven a ejecutar un trabajo terminado o con un lease vigente.
+6. El worker vuelve a validar deck, materiales y rutas, descarga los objetos
+   reales, comprueba tamaño, MIME, firma, dimensiones de imágenes y páginas PDF.
+   Invoca AgentCore con un manifiesto pequeño que incluye ETags.
+7. AgentCore ejecuta el agente Strands en Node 22 mediante despliegue de ZIP,
+   protocolo HTTP, `/ping` y `/invocations` en 8080. Descarga exclusivamente las
+   rutas del manifiesto, con `IfMatch` para rechazar objetos que hayan cambiado,
+   y vuelve a validar su contenido. No acepta URL externas ni usa herramientas
+   de navegación o ejecución de código.
+8. Bedrock recibe imágenes y documentos PDF; para PDF se habilitan citas.
+   Un agente nuevo por invocación evita compartir conversación entre trabajos.
+   Se limita el tiempo, número de turnos y tokens. El prompt pide verificar
+   las respuestas y tratar las instrucciones incrustadas como datos.
+9. Strands devuelve el esquema Zod. El worker vuelve a validar formato,
+   cantidad, fuentes autorizadas, páginas y preguntas normalizadas repetidas.
+10. Una transacción guarda todas las Flashcard, completa GenerationJob y libera
+    el deck. Si falla la transacción no se publica un conjunto parcial. Los IDs
+    de tarjetas se derivan del trabajo y su posición. Las tarjetas son de solo
+    lectura para clientes; los trabajos también.
+11. La interfaz consulta el estado cada cuatro segundos durante el trabajo y
+    mientras espera la propagación de los índices. Solo muestra tarjetas de
+    trabajos COMPLETED. Las consultas recorren páginas y rechazan errores
+    parciales. No depende de suscripciones, porque las escrituras transaccionales
+    directas a DynamoDB no generan eventos de suscripción AppSync.
 
-S3 utiliza el **Identity Pool ID**, distinto del `sub`:
+## Infraestructura y permisos
 
-`materials/{identityId}/{deckId}/{materialId}.{extension}`
+`amplify/generation/infrastructure.ts` añade recursos al stack de Data, conserva
+los recursos existentes y conecta las funciones definidas con Amplify. El ZIP
+se empaqueta con esbuild, incluyendo dependencias JavaScript sin binarios nativos;
+el hash del artefacto incluye el resultado compilado y sus imports compartidos.
 
-Solo esa identidad puede leer/escribir/borrar sus archivos. `shared/materials.ts`
-construye la ruta y valida formatos/tamaños para el futuro uploader. Esas
-validaciones no son una política S3: la función deberá comprobar los objetos
-reales y su contenido antes de usarlos. Los límites iniciales de la demo son
-20 MB por archivo, diez materiales por solicitud y hasta cincuenta tarjetas.
-Se revisarán con el modelo elegido y el procesamiento de PDF.
+- Mutación pública solo para usuarios autenticados; Runtime requiere SigV4 IAM.
+  El navegador no recibe permiso para invocar AgentCore directamente.
+- Roles separados para solicitud, worker y Runtime. Lectura de las tablas
+  necesarias, escrituras específicas y acceso S3 limitado a `materials/*`.
+- El Runtime puede invocar solo el perfil configurado y el modelo en sus tres
+  regiones de destino. La inferencia puede salir de `us-east-1` dentro de EE. UU.
+- Endpoint `demo`, red PUBLIC para esta demo, sin acceso anónimo. La comunicación
+  cliente pasa por el servicio AgentCore autenticado.
+- Logs del Runtime con KMS y retención de dos semanas; las funciones también
+  retienen logs dos semanas. Los logs propios no contienen prompts, archivos,
+  tokens ni respuestas del modelo; registran IDs de trabajo y tipos de error.
+- GenerationControl usa TTL, y los bloqueos se comprueban por su vencimiento,
+  sin depender de la eliminación eventual del TTL.
+- Worker de hasta 10 minutos, agente de hasta 8 minutos, lease de 11 minutos y
+  bloqueo renovado de 20 minutos. Stream con lote de 1, hasta 20 reintentos,
+  antigüedad máxima de cuatro horas y cola de fallos cifrada por SQS.
+- Un evento que perdió su bloqueo no vuelve a invocar el agente ni libera el
+  bloqueo de una solicitud nueva. La interfaz permite consultar o generar
+  nuevamente si el trabajo supera 20 minutos sin actualizarse.
 
-La autorización por registro NO valida automáticamente que una FK pertenezca
-al mismo usuario, y las relaciones NO hacen borrado en cascada. Cada operación
-compuesta deberá verificar padre/hijos; usar `archived` para retirar un deck
-hasta implementar la limpieza de registros y objetos. Una sesión conserva IDs
-y valoraciones, no una copia histórica del texto de cada tarjeta.
+La base de permisos se revisó con IAM Policy Autopilot, sin subir políticas:
 
-## Solicitud desde la app
-
-`shared/generation.ts` contiene el contrato Zod y sus tipos:
-
-```json
-{
-  "deckId": "deck-1",
-  "materialIds": ["material-1"],
-  "requestId": "a21b5268-1403-43e8-9546-f989e4e50d53",
-  "preferences": { "language": "es", "cardCount": 10, "focus": "conceptos clave" }
-}
+```bash
+uvx iam-policy-autopilot@latest generate-policies \
+  amplify/generation/request/handler.ts \
+  amplify/generation/worker/handler.ts \
+  amplify/generation/store.ts agent/runtime.ts \
+  --region us-east-1 --account 267524937908 --pretty
 ```
 
-La solicitud no acepta `owner`, bucket, ruta S3 ni ARN. La identidad procede
-del contexto autenticado del backend. `requestId` servirá para idempotencia;
-la implementación futura debe garantizarla con escritura condicional, por
-usuario, antes de lanzar una generación. El contrato por sí solo no lo garantiza.
+El análisis estático genera una base amplia cuando las tablas/buckets proceden
+de variables de ambiente. CDK la restringe a recursos del ambiente; las llamadas
+indirectas de Strands y permisos de operación del Runtime requieren revisión
+adicional. No se adjuntó una política administrativa a las funciones.
 
-## Implementación de la etapa 04
+## Límites de esta demo
 
-1. Añadir una mutación autenticada de Amplify Data y su Lambda, con permisos
-   mínimos. Verificar el `sub` autenticado, leer el deck y todos los materiales,
-   y comprobar propiedad, pertenencia al deck y estado `UPLOADED`.
-2. Resolver rutas desde registros confiables y verificar prefijo privado,
-   existencia, tamaño y tipo real de los objetos. No confiar en MIME o metadatos
-   escritos por el navegador. Resolver de forma confiable la relación entre
-   `sub` e Identity Pool ID.
-3. Crear un trabajo idempotente con `owner` establecido por el backend.
-   Devolver su ID y ejecutar la generación de forma asíncrona para no depender
-   del tiempo límite de una petición de la interfaz. Elegir el disparador/cola
-   cuando se implemente esta etapa.
-4. El worker invoca AgentCore Runtime con los materiales autorizados. El agente
-   Strands recibe acceso limitado a esos objetos. Definir herramientas S3 o
-   enlaces de duración limitada y el procesamiento de PDF según el modelo.
-5. El modelo multimodal de Bedrock interpreta fotos, diapositivas y páginas;
-   el agente construye preguntas y verifica su fundamento en el material.
-6. Validar la respuesta con `validateGenerationResult`, que exige estructura,
-   referencias dentro de la solicitud autorizada, páginas para PDF, ausencia
-   de preguntas idénticas normalizadas y un máximo de tarjetas. Esto no verifica
-   semánticamente la respuesta ni detecta duplicados por significado.
-7. Persistir tarjetas con el `owner` validado del trabajo. Hacer la persistencia
-   reintentable sin tarjetas duplicadas ni resultados parciales visibles. Marcar
-   el trabajo completado o fallido con un mensaje apto para el usuario.
-8. La interfaz observa o consulta el trabajo y recarga las tarjetas. No debe
-   generar tarjetas ficticias ante un error del agente.
+Storage sigue admitiendo archivos de 20 MiB. Para generación se aplican límites
+menores: 10 materiales, imágenes de hasta 3.75 MiB y 8000 × 8000 píxeles, hasta
+5 PDF de 4.5 MiB cada uno, entre 1 y 100 páginas por PDF y 20 MiB totales.
+Los límites se validan antes de invocar al agente; un modelo puede imponer
+restricciones adicionales. No se comprimen imágenes ni se dividen PDF automáticamente.
 
-## Configuración de esa etapa
+La inspección de imágenes comprueba firma y dimensiones, no una decodificación
+completa de todos los píxeles. La generación no garantiza que el modelo lea
+correctamente todo el contenido. La revisión semántica es una instrucción al
+agente; el validador determinista solo comprueba estructura y referencias.
+No se hace deduplicación semántica ni entre distintas generaciones del deck.
+Una generación nueva añade tarjetas y no reemplaza las existentes.
 
-El backend necesitará región, ARN del runtime, acceso al modelo multimodal y
-permisos explícitos para invocar AgentCore, leer los objetos autorizados y
-persistir resultados. Se configurarán en el backend de cada ambiente. No se
-han concedido permisos amplios a S3, Bedrock o AgentCore por adelantado.
+La cola de selección sigue siendo local al deck. Una vez creado el trabajo,
+su procesamiento continúa en AWS aunque el usuario salga o cierre sesión.
+La cancelación del trabajo remoto y las sesiones de práctica quedan fuera de
+esta etapa. La cola de fallos requiere revisión operativa; no se reenvían trabajos
+indefinidamente ni se oculta un fallo como generación exitosa.
 
-Pruebas pendientes al conectar servicios: aislamiento entre dos usuarios,
-materiales de otro deck, rutas manipuladas, PDF inválidos, contenido no legible,
-reintentos, solicitudes simultáneas, errores del modelo y persistencia parcial.
+## Despliegue pendiente
+
+Antes de ejecutar el sandbox, completar la verificación de la cuenta para
+Bedrock y habilitar los permisos de despliegue AgentCore en el permission set
+SSO y en el rol de CloudFormation usado por Amplify. Esta etapa incorpora
+`AWS::BedrockAgentCore::Runtime` y `RuntimeEndpoint`, sus roles, políticas,
+artefactos S3, logs/KMS, una tabla de control y una cola de fallos. El rol de
+Hosting también necesitará poder desplegar esos recursos cuando se publique.
+No basta con permitir solo `ListAgentRuntimes`.
+
+Para el desarrollador: consultar runtimes/endpoints y permitir una invocación
+contra el runtime de esta demo. Para el runtime: Bedrock y lecturas S3 ya se
+conceden desde CDK. Revisar los alcances con el administrador de la cuenta;
+no es necesario dar `bedrock:*` o `bedrock-agentcore:*` al navegador.
+
+Con la misma identidad de sandbox usada anteriormente:
+
+```bash
+npm run check
+npm run synth:backend
+npm run sandbox -- --profile student-cd
+```
+
+Conservar el identificador del sandbox existente si se usó uno personalizado.
+Al terminar, los outputs incluirán `custom.generation` con los ARN del Runtime
+y del endpoint. Reiniciar Vite para cargar los outputs nuevos. La interfaz informa
+que hay que actualizar el sandbox si los outputs aún no contienen la mutación.
+
+Verificar que Runtime y endpoint `demo` estén READY, hacer una generación real
+con una imagen clara y otra con un PDF pequeño, recargar las tarjetas y comprobar
+las fuentes. Probar otra cuenta sin acceso a los registros/objetos anteriores,
+materiales de otro deck, archivos manipulados, solicitudes simultáneas y fallos.
+Una síntesis o una prueba simulada no sustituye estas verificaciones.
+
+## Validación local
+
+`npm run check` cubre lint y tipos del frontend, backend, agente y contratos,
+además de pruebas unitarias de Auth, subida y generación. Las nuevas pruebas
+cubren propiedad, rutas, reserva idempotente, reservas ambiguas, leases,
+exclusión por deck, transacciones de guardado, PDF real, límites y rechazo de
+resultados inválidos. `npm run build` compila la aplicación de producción.
+También se arrancó el artefacto CommonJS sintetizado en un puerto local de prueba:
+respondió correctamente a `/ping`, rechazó una invocación inválida y devolvió
+404 para rutas desconocidas, sin hacer llamadas AWS.
+
+La revisión de navegador con AWS simulado cubrió selección, preferencias,
+QUEUED/PROCESSING/COMPLETED, tarjetas y fuentes, recarga, fallos sin tarjetas
+ficticias, respuesta de solicitud perdida, errores de consulta y anchos de
+320, 360, 390, 768 y 1440 px. El esquema de cliente de esa prueba se tomó de la
+síntesis; los outputs reales del sandbox no se modificaron.
+
+Referencias: [Node.js directo en AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-node.html),
+[permisos AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html),
+[InvokeAgentRuntime](https://docs.aws.amazon.com/bedrock-agentcore/latest/APIReference/API_InvokeAgentRuntime.html),
+[Streams con Amplify](https://docs.amplify.aws/react/build-a-backend/functions/examples/dynamo-db-stream/),
+[salida estructurada de Strands](https://strandsagents.com/docs/user-guide/sdk/agents/structured-output/).

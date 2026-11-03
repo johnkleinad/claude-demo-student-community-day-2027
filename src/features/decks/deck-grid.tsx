@@ -21,7 +21,7 @@ export function DeckGrid({ decks, activeId }: { decks: StudyDeck[]; activeId?: s
           </span>
           <span className="deck-tile-info">
             <span className="deck-tile-title">{deck.title}</span>
-            <span className="deck-tile-meta">0 tarjetas</span>
+            <span className="deck-tile-meta">Abrir materiales y tarjetas</span>
           </span>
         </Link>
       ))}

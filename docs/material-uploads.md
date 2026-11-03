@@ -61,7 +61,8 @@ Verificación pendiente en AWS: entrar con una cuenta confirmada, crear un deck,
 subir una imagen y un PDF, recargar y abrir ambos. Con otra cuenta, comprobar
 que esos materiales no aparecen y que no se pueden consultar ni descargar.
 
-El botón de generación y la integración AgentCore/Bedrock corresponden a la
-etapa 04. Ese backend deberá volver a validar propiedad del deck, materiales,
-rutas y contenido de S3. Las comprobaciones del navegador no imponen relaciones
-de propiedad entre modelos a clientes que llamen directamente a la API.
+El botón de generación y la integración AgentCore/Bedrock se implementan en la
+etapa 04; ver [Integración del agente](agent-integration.md). Ese backend vuelve
+a validar propiedad del deck, materiales, rutas y contenido de S3. Las
+comprobaciones del navegador no imponen relaciones de propiedad entre modelos
+a clientes que llamen directamente a la API.
