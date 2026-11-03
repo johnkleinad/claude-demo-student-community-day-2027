@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { ArrowLeft, Plus, Sparkles } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -13,11 +13,19 @@ import { DeckGrid } from './deck-grid'
 import { NewDeck } from './new-deck'
 import { useDecks } from './use-decks'
 
+function subscribeDesktop(listener: () => void) {
+  const query = window.matchMedia('(min-width: 1024px)')
+  query.addEventListener('change', listener)
+  return () => query.removeEventListener('change', listener)
+}
+const desktopSnapshot = () => window.matchMedia('(min-width: 1024px)').matches
+
 export function DeckWorkspace() {
   const { deckId } = useParams()
   const navigate = useNavigate()
   const { decks, loading, error, reload, createDeck } = useDecks()
   const detailRef = useRef<HTMLElement>(null)
+  const desktop = useSyncExternalStore(subscribeDesktop, desktopSnapshot, () => false)
   const isCreating = deckId === 'new'
   const selectedDeck = deckId ? decks.find((deck) => deck.id === deckId) : decks[0]
   const isEmpty = decks.length === 0 && !deckId && !loading && !error
@@ -73,7 +81,7 @@ export function DeckWorkspace() {
                 <EmptyDescription>Convierte tus notas de cloud, código e IA en tarjetas de estudio.</EmptyDescription>
               </EmptyHeader>
             </Empty>
-          ) : <DeckGrid decks={decks} activeId={selectedDeck?.id} />}
+          ) : <DeckGrid decks={decks} activeId={desktop || deckId ? selectedDeck?.id : undefined} />}
 
           <footer className="library-footer">
             <AccountControls />
@@ -82,7 +90,7 @@ export function DeckWorkspace() {
           </footer>
         </section>
 
-        {!isEmpty && (
+        {!isEmpty && (desktop || !!deckId) && (
           <section id="deck-detail" className="detail-panel" ref={detailRef} tabIndex={-1} aria-label="Detalle del deck">
             <nav className="detail-toolbar" aria-label="Navegación del deck">
               <Link to="/" className="back-to-library"><ArrowLeft aria-hidden="true" /> Mis decks</Link>

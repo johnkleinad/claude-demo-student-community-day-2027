@@ -104,6 +104,6 @@ a Cognito no usa las credenciales CLI del desarrollador.
 
 ## Próximo paso
 
-Carga de imágenes y PDF a Storage y creación de registros Material privados por
-usuario. La generación con AgentCore/Bedrock y las sesiones de práctica siguen
-para las etapas posteriores.
+La carga de imágenes y PDF se implementa en la rama `feat/03b-material-uploads`;
+ver [Carga de materiales](material-uploads.md). La generación con AgentCore/Bedrock
+y las sesiones de práctica siguen para las etapas posteriores.

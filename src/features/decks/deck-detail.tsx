@@ -1,7 +1,7 @@
 import { Layers3 } from 'lucide-react'
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { DeckCover } from './deck-cover'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import type { StudyDeck } from './deck-repository'
+import { MaterialsPanel } from '@/features/materials/materials-panel'
 
 export function DeckDetail({ deck }: { deck: StudyDeck }) {
   return (
@@ -12,12 +12,12 @@ export function DeckDetail({ deck }: { deck: StudyDeck }) {
         {deck.description && <p className="deck-description">{deck.description}</p>}
         <p className="deck-detail-meta"><Layers3 aria-hidden="true" /> 0 tarjetas <span aria-hidden="true">·</span> 0 sesiones</p>
       </header>
-      <Empty className="deck-detail-empty">
-        <EmptyMedia><DeckCover large /></EmptyMedia>
+      <MaterialsPanel key={deck.id} deckId={deck.id} />
+      <Empty className="deck-cards-empty">
         <EmptyHeader>
-          <EmptyTitle>Un deck para tu próximo reto técnico.</EmptyTitle>
+          <EmptyTitle>Tus tarjetas aparecerán aquí.</EmptyTitle>
           <EmptyDescription>
-            Todavía no hay tarjetas. Tus notas técnicas, diagramas de arquitectura y diapositivas serán el punto de partida.
+            Reúne los materiales que quieres repasar. Serán el punto de partida para las preguntas de este deck.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
