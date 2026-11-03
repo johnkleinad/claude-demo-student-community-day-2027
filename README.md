@@ -1,39 +1,67 @@
-# claude-demo-student-community-day-2027
+# Study Cards · Student Community Day
 
-Proyecto creado con Vite, React y TypeScript.
+Demo de una app que convierte imágenes de pizarrones, apuntes, diapositivas y
+PDF en tarjetas de estudio. Un deck contiene materiales, tarjetas y varias
+sesiones de práctica.
 
-## Requisitos
+React + TypeScript + Vite, React Router, Tailwind CSS, shadcn/ui y AWS Amplify
+Gen 2. Bedrock, Strands y AgentCore se integrarán en una etapa posterior.
 
-- Node.js 22.12 o superior (se recomienda Node.js 22 LTS).
-- npm.
+## Estado
+
+Etapa 01: infraestructura preparada para desplegar. Auth por correo, Storage
+privado y modelos de decks, materiales, tarjetas, sesiones y trabajos de
+generación. La pantalla actual es un scaffold. El diseño responsivo se construirá
+junto al usuario, tomando como referencia el sitio del evento.
+
+Todavía no hay pantallas de autenticación, carga real de archivos, generación
+por IA ni sesión de práctica. No se han desplegado recursos AWS.
 
 ## Desarrollo
 
+Node.js 22.12 o superior dentro de la versión 22 y npm.
+
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Abre la dirección que indique Vite en la terminal.
+El frontend funciona sin AWS para construir el layout. Las operaciones de datos
+requieren los outputs de un backend desplegado y un usuario autenticado.
 
-## Comandos
-
-- `npm run dev`: inicia el servidor de desarrollo.
-- `npm run build`: comprueba TypeScript y genera la compilación en `dist/`.
-- `npm run lint`: analiza el código con Oxlint.
-- `npm run preview`: permite revisar la compilación localmente después de `npm run build`.
-
-## Subir a GitHub
-
-Este repositorio ya tiene configurado el remoto `origin`:
-`git@github.com:johnkleinad/claude-demo-student-community-day-2027.git`.
-
-Desde esta carpeta, con acceso SSH a tu cuenta de GitHub:
+## Comprobaciones
 
 ```bash
-git add .
-git commit -m "Inicializa Vite con React y TypeScript"
-git push -u origin main
+npm run check
+npm run synth:backend
+npm run build
 ```
 
-El archivo `.gitignore` excluye dependencias, compilaciones, variables de entorno y configuración local. El archivo `package-lock.json` se incluye para reproducir la instalación; en CI puedes usar `npm ci`.
+- `check`: lint, tipos de frontend/backend/contratos y pruebas.
+- `synth:backend`: genera plantillas locales sin desplegar recursos.
+- `build`: genera `dist/` para revisar el frontend local.
+- `build:hosting`: exige configuración de Auth, Data y Storage antes de compilar.
+- `preview`: sirve la compilación local.
+- `sandbox`: crea/actualiza un backend AWS de desarrollo y observa cambios.
+- `sandbox:once`: despliega el sandbox una vez.
+- `amplify:outputs`: descarga configuración de un backend de rama existente.
+
+## Estructura
+
+- `amplify/`: backend Gen 2.
+- `src/lib/amplify.ts`: configuración desde `amplify_outputs.json`.
+- `src/lib/data.ts`: cliente de datos tipado, creado al necesitarlo.
+- `shared/`: contratos de generación y validaciones de materiales.
+- `tests/`: pruebas de contratos, referencias y rutas de materiales.
+- `hosting/`: configuración de rutas para Hosting.
+- `docs/`: decisiones, etapas y despliegue.
+
+## Documentación del proyecto
+
+- [Despliegue](docs/deployment.md).
+- [Etapas y ramas](docs/development-stages.md).
+- [Integración futura del agente](docs/agent-integration.md).
+- [Referencia visual del evento](docs/design-reference.md).
+
+El `spec.md` de reproducción se escribirá al terminar la app para documentar
+el resultado real y permitir intentar replicarlo con un solo prompt.
