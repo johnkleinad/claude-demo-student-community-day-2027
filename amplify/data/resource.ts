@@ -1,5 +1,6 @@
 import { a, defineData, type ClientSchema } from '@aws-amplify/backend'
 import { postConfirmation } from '../auth/post-confirmation/resource'
+import { generateCards } from '../generation/request/resource'
 import {
   SourceReference,
   StudyAnswer,
@@ -12,6 +13,11 @@ import {
 } from './models'
 
 const schema = a.schema({
+  generateCards: a.mutation()
+    .arguments({ request: a.json().required() })
+    .returns(a.string().required())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(generateCards)),
   SourceReference,
   StudyAnswer,
   Deck,

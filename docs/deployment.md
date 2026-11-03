@@ -14,14 +14,17 @@
 ## Desarrollo con sandbox
 
 Usar Node.js 22.12 o superior dentro de la versión 22 y credenciales AWS con
-permisos para el sandbox. El perfil y la región del proyecto aún no están
-confirmados. No reutilizar perfiles de otros proyectos por defecto.
+permisos para el sandbox. El perfil confirmado del proyecto es `student-cd`,
+en `us-east-1`. Conservar el identificador de sandbox usado para el ambiente
+existente. La etapa 04 añade recursos AgentCore: revisar los requisitos y
+bloqueos de cuenta en [Integración del agente](agent-integration.md) antes de
+desplegar esa rama.
 
 ```bash
 npm ci
 npm run check
 npm run synth:backend
-npm run sandbox -- --profile TU_PERFIL
+npm run sandbox -- --profile student-cd
 ```
 
 El perfil debe tener configurada la región elegida. El sandbox crea recursos
@@ -32,7 +35,7 @@ npm run dev
 ```
 
 Reiniciar Vite cuando se genere/cambie el archivo de outputs. Para desplegar una
-sola vez sin observación, usar `npm run sandbox:once -- --profile TU_PERFIL`.
+sola vez sin observación, usar `npm run sandbox:once -- --profile student-cd`.
 
 ## Hosting con GitHub
 
