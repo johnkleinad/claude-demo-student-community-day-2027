@@ -5,7 +5,10 @@ Inspección de HTML y CSS público del sitio, 2026-11-02.
 
 El usuario pidió tomar su diseño, colores y fuentes como referencia. La interfaz
 se construirá con sus descripciones; esta captura de tokens no fija el layout.
-No se han sustituido todavía los estilos de la app.
+La paleta y las fuentes ya están aplicadas en `src/index.css`. Los componentes
+shadcn consumen esos colores mediante sus tokens semánticos. El tema oscuro
+es el predeterminado, con Pixelify Sans en títulos y Share Tech Mono en texto.
+Las acciones primarias usan el naranja del evento y los enlaces su cian.
 
 ## Tipografías verificadas
 

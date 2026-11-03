@@ -5,12 +5,13 @@ import { cn } from '@/lib/utils'
 function Home() {
   return (
     <section className="flex flex-col gap-5">
-      <p className="text-sm font-medium text-muted-foreground">Student Community Day 2027</p>
-      <h1 className="text-4xl font-semibold tracking-tight">Todo empieza con una idea.</h1>
+      <p className="text-sm font-medium text-highlight">Student Community Day 2027</p>
+      <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">Tus apuntes, listos para estudiar.</h1>
       <p className="max-w-prose text-muted-foreground">
-        La base de la demo está lista. El siguiente paso es elegir qué vamos a construir.
+        Convierte fotos del pizarrón, diapositivas y PDF en tarjetas de estudio.
+        Organiza tus materiales en decks y practica a tu ritmo.
       </p>
-      <Link className={cn(buttonVariants(), 'w-fit')} to="/acerca">
+      <Link className={cn(buttonVariants(), 'min-h-11 w-fit px-5')} to="/acerca">
         Ver el proyecto
       </Link>
     </section>
@@ -25,7 +26,7 @@ function About() {
         React y TypeScript, componentes con shadcn/ui, estilos con Tailwind CSS,
         navegación con React Router y un backend con AWS Amplify Gen 2.
       </p>
-      <Link className="w-fit text-sm font-medium underline underline-offset-4" to="/">
+      <Link className="w-fit text-sm font-medium text-link underline underline-offset-4" to="/">
         Volver al inicio
       </Link>
     </section>
@@ -35,10 +36,10 @@ function About() {
 function App() {
   return (
     <div className="min-h-svh bg-background text-foreground">
-      <header className="border-b">
-        <nav aria-label="Navegación principal" className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-5">
-          <Link to="/" className="font-semibold tracking-tight">Community Demo</Link>
-          <Link to="/acerca" className="text-sm text-muted-foreground underline-offset-4 hover:underline">Acerca del proyecto</Link>
+      <header className="border-b bg-card">
+        <nav aria-label="Navegación principal" className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 py-5">
+          <Link to="/" className="font-heading text-2xl font-semibold tracking-tight">Community Demo</Link>
+          <Link to="/acerca" className="inline-flex min-h-11 items-center text-sm text-link underline-offset-4 hover:underline">Acerca del proyecto</Link>
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-20">
@@ -48,7 +49,7 @@ function App() {
           <Route path="*" element={
             <section className="flex flex-col gap-4">
               <h1 className="text-3xl font-semibold">Página no encontrada</h1>
-              <Link to="/" className="underline underline-offset-4">Volver al inicio</Link>
+              <Link to="/" className="text-link underline underline-offset-4">Volver al inicio</Link>
             </section>
           } />
         </Routes>
