@@ -25,8 +25,10 @@ persisten: se puede seleccionar su archivo original para reintentar.
 ## Persistencia y recuperación
 
 1. Comprobar sesión, identidad de Storage y deck propio sin archivar.
-2. Crear Material como PENDING antes de enviar bytes a S3.
-3. Subir con `preventOverwrite` a
+2. Crear Material como PENDING, sin ruta, antes de enviar bytes a S3. El ID lo
+   asigna AppSync: la autorización por campo de `owner` hace que el resolver
+   rechace un `id` enviado por el cliente (`Unauthorized on [id]`).
+3. Guardar `storagePath` con el ID asignado y subir con `preventOverwrite` a
    `materials/{identityPoolId}/{deckId}/{materialId}.{extension}`.
 4. Cambiar Material a UPLOADED solo cuando S3 terminó correctamente.
 
@@ -34,8 +36,10 @@ La identidad del directorio privado es el ID del Identity Pool; el propietario
 de Data es el `sub` del User Pool. No son intercambiables. La autorización de
 los recursos existentes limita cada usuario a sus propios registros y objetos.
 
-El reintento conserva el ID y la ruta. Si una creación tuvo una respuesta
-ambigua, consulta ese mismo ID. Si S3 ya contiene el objeto con el tamaño y
+El reintento conserva el ID asignado y la ruta. Un registro creado sin ruta
+se completa al reintentar con el archivo original. Si una creación tuvo una
+respuesta ambigua, puede quedar un registro PENDING sin ruta que se reintenta
+desde la lista. Si S3 ya contiene el objeto con el tamaño y
 tipo esperados, confirma Data sin repetir la carga. No compara el contenido
 completo de dos archivos. Si falla una subida, intenta marcar FAILED; si falla
 el guardado final, conserva el registro recuperable. No borra registros ni

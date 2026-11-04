@@ -17,7 +17,7 @@ export function MaterialsPanel({ state }: { state: ReturnType<typeof useMaterial
   const dragDepth = useRef(0)
   const ready = state.jobs.filter((job) => job.status === 'ready' || job.status === 'failed').length
   const checking = state.jobs.some((job) => job.status === 'checking')
-  const visibleMaterials = state.materials.filter((material) => !state.jobs.some((job) => job.id === material.id))
+  const visibleMaterials = state.materials.filter((material) => !state.jobs.some((job) => job.materialId === material.id))
   const disabled = state.loading || !!state.error || state.busy || checking
 
   function pick(material?: StudyMaterial) {
