@@ -1,6 +1,8 @@
 import { a } from '@aws-amplify/backend'
 
 export const StudySession = a.model({
+  // Declared explicitly: owner field rules omit 'create', so implicit id would be denied on client-supplied IDs.
+  id: a.id().required(),
   deckId: a.id().required(),
   deck: a.belongsTo('Deck', 'deckId'),
   status: a.enum(['ACTIVE', 'COMPLETED']),
