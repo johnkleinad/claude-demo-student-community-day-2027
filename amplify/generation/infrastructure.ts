@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { buildSync } from 'esbuild'
-import { AssetHashType, DockerImage, Duration, Names, RemovalPolicy, Stack } from 'aws-cdk-lib'
+import { ArnFormat, AssetHashType, DockerImage, Duration, Names, RemovalPolicy, Stack } from 'aws-cdk-lib'
 import { CfnRuntime, CfnRuntimeEndpoint } from 'aws-cdk-lib/aws-bedrockagentcore'
 import { AttributeType, BillingMode, Table, type ITable } from 'aws-cdk-lib/aws-dynamodb'
 import { PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam'
@@ -50,7 +50,8 @@ export function configureGeneration(scope: Construct, resources: {
     stack.formatArn({ service: 'bedrock', resource: 'inference-profile', resourceName: modelId }),
     ...['us-east-1', 'us-east-2', 'us-west-2'].map((region) => stack.formatArn({ service: 'bedrock', region, account: '', resource: 'foundation-model', resourceName: baseModel })),
   ] }))
-  const logPrefix = stack.formatArn({ service: 'logs', resource: 'log-group', resourceName: `/aws/bedrock-agentcore/runtimes/${runtimeName}*` })
+  const logPrefix = stack.formatArn({ service: 'logs', resource: 'log-group', resourceName: `/aws/bedrock-agentcore/runtimes/${runtimeName}*`,
+    arnFormat: ArnFormat.COLON_RESOURCE_NAME })
   role.addToPolicy(new PolicyStatement({ actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents', 'logs:DescribeLogStreams'], resources: [logPrefix] }))
   // AgentCore requires this for its workload identity. Scope to its default directory.
   role.addToPolicy(new PolicyStatement({ actions: ['bedrock-agentcore:GetWorkloadAccessToken'], resources: [
