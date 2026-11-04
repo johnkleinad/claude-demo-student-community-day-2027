@@ -1,4 +1,6 @@
-export const MAX_MATERIAL_BYTES = 20 * 1024 * 1024
+// No product upload limit. Material.sizeBytes is a GraphQL Int (32-bit), so that is the only ceiling.
+// Generation applies its own per-file limits (Bedrock) in amplify/generation/files.ts.
+export const MAX_MATERIAL_BYTES = 2 ** 31 - 1
 export const MAX_FILES_PER_BATCH = 10
 export const MATERIAL_FILE_ACCEPT = '.jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf'
 
@@ -14,7 +16,7 @@ export function validateMaterialFile(file: { type: string; size: number }) {
     throw new Error('Selecciona una imagen JPG, PNG, WebP o un PDF.')
   }
   if (!Number.isSafeInteger(file.size) || file.size <= 0 || file.size > MAX_MATERIAL_BYTES) {
-    throw new Error('El archivo debe tener contenido y pesar como máximo 20 MB.')
+    throw new Error('El archivo está vacío o es demasiado grande para registrarlo.')
   }
 }
 
@@ -25,7 +27,7 @@ export async function inspectMaterialFile(file: {
 }) {
   // Some mobile browsers omit MIME types. Inspect bytes rather than trusting a filename.
   if (!Number.isSafeInteger(file.size) || file.size <= 0 || file.size > MAX_MATERIAL_BYTES) {
-    throw new Error('El archivo debe tener contenido y pesar como máximo 20 MB.')
+    throw new Error('El archivo está vacío o es demasiado grande para registrarlo.')
   }
   const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer())
   const starts = (signature: number[]) => signature.every((value, index) => bytes[index] === value)

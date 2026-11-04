@@ -52,7 +52,7 @@ export function MaterialsPanel({ state }: { state: ReturnType<typeof useMaterial
         <Button type="button" variant="outline" className="min-h-11" disabled={disabled} onClick={() => pick()}><Plus data-icon="inline-start" /> Agregar material</Button>
       </header>
       <input ref={fileInput} className="sr-only" tabIndex={-1} type="file" accept={MATERIAL_FILE_ACCEPT} multiple onChange={onFiles} disabled={disabled} aria-label="Seleccionar imágenes o PDF" />
-      <p className="materials-hint">JPG, PNG, WebP o PDF · Hasta 20 MB por archivo · 10 por carga</p>
+      <p className="materials-hint">JPG, PNG, WebP o PDF · 10 por carga</p>
 
       {state.error ? <div className="materials-load-error"><Alert variant="destructive"><AlertTitle>No pudimos cargar tus materiales</AlertTitle><AlertDescription>{state.error}</AlertDescription></Alert><Button type="button" variant="outline" className="min-h-11" onClick={() => { void state.reload() }}>Reintentar materiales</Button></div>
         : state.loading ? <div className="materials-loading" role="status" aria-label="Cargando materiales"><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /><span className="sr-only">Cargando materiales…</span></div>

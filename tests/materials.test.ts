@@ -39,10 +39,11 @@ test('rechaza traversal, identidades inválidas y tipos no admitidos', () => {
   assert.throws(() => createMaterialPath({ ...input, contentType: 'text/html' }))
 })
 
-test('admite imágenes y PDF dentro del límite; rechaza archivos vacíos, grandes o tipos ejecutables', () => {
+test('admite imágenes y PDF de más de 20 MB; rechaza archivos vacíos, grandes o tipos ejecutables', () => {
   for (const type of ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']) {
     assert.doesNotThrow(() => validateMaterialFile({ type, size: MAX_MATERIAL_BYTES }))
   }
+  assert.doesNotThrow(() => validateMaterialFile({ type: 'application/pdf', size: 500 * 1024 * 1024 }))
   assert.throws(() => validateMaterialFile({ type: 'image/png', size: 0 }))
   assert.throws(() => validateMaterialFile({ type: 'image/png', size: MAX_MATERIAL_BYTES + 1 }))
   assert.throws(() => validateMaterialFile({ type: 'text/html', size: 100 }))
