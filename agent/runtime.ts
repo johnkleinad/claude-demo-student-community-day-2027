@@ -3,12 +3,12 @@ import { Agent, BedrockModel, type ContentBlockData } from '@strands-agents/sdk'
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 import { z } from 'zod'
 import { generationRequestSchema, generationResultSchema, validateGenerationResult } from '../shared/generation'
-import { createMaterialPath } from '../shared/materials'
+import { createMaterialPath, MAX_GENERATION_TOTAL_BYTES, MAX_MATERIAL_BYTES } from '../shared/materials'
 import { inspectGenerationBytes } from '../amplify/generation/files'
 
 const manifestSchema = z.object({
   id: z.string(), storagePath: z.string(), contentType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']),
-  sizeBytes: z.number().int().positive().max(4.5 * 1024 * 1024), etag: z.string().min(1), pageCount: z.number().int().positive().max(100).optional(),
+  sizeBytes: z.number().int().positive().max(MAX_MATERIAL_BYTES), etag: z.string().min(1), pageCount: z.number().int().positive().max(100).optional(),
 }).strict()
 const inputSchema = z.object({ request: generationRequestSchema, identityId: z.string(), materials: z.array(manifestSchema).min(1).max(10) }).strict()
 const s3 = new S3Client({ region: process.env.AWS_REGION })
@@ -31,7 +31,7 @@ export async function generate(payload: unknown) {
   if (new Set(ids).size !== ids.length || ids.length !== input.request.materialIds.length || input.request.materialIds.some((id) => !ids.includes(id))) throw new Error('Material manifest mismatch')
   if (input.materials.filter((material) => material.contentType === 'application/pdf').length > 5 ||
       input.materials.filter((material) => material.contentType.startsWith('image/')).length > 5 ||
-      input.materials.reduce((sum, material) => sum + material.sizeBytes, 0) > 20 * 1024 * 1024) throw new Error('Material budget exceeded')
+      input.materials.reduce((sum, material) => sum + material.sizeBytes, 0) > MAX_GENERATION_TOTAL_BYTES) throw new Error('Material budget exceeded')
   const content: ContentBlockData[] = [{ text: JSON.stringify({ language: input.request.preferences.language,
     maxCards: input.request.preferences.cardCount, focus: input.request.preferences.focus ?? 'Conceptos clave' }) }]
   const validatedMaterials = []
@@ -49,8 +49,10 @@ export async function generate(payload: unknown) {
     const metadata = await inspectGenerationBytes(bytes, material.contentType)
     validatedMaterials.push({ ...material, ...metadata })
     content.push({ text: `Material autorizado: ${material.id}${metadata.pageCount ? `, ${metadata.pageCount} páginas` : ''}.` })
-    if (material.contentType === 'application/pdf') content.push({ document: { name: `Material ${validatedMaterials.length}`, format: 'pdf', source: { bytes } } })
-    else content.push({ image: { format: material.contentType === 'image/jpeg' ? 'jpeg' : material.contentType === 'image/png' ? 'png' : 'webp', source: { bytes } } })
+    // Pass the validated object by S3 location: inline bytes are base64-encoded and capped at 25 MB per request.
+    const source = { location: { type: 's3' as const, uri: `s3://${process.env.MATERIAL_BUCKET}/${path}` } }
+    if (material.contentType === 'application/pdf') content.push({ document: { name: `Material ${validatedMaterials.length}`, format: 'pdf', source } })
+    else content.push({ image: { format: material.contentType === 'image/jpeg' ? 'jpeg' : material.contentType === 'image/png' ? 'png' : 'webp', source } })
   }
   // A new agent per invocation prevents conversation state crossing jobs/users.
   const agent = new Agent({ model: new BedrockModel({ modelId: process.env.BEDROCK_MODEL_ID,

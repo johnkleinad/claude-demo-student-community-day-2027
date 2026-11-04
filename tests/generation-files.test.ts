@@ -21,6 +21,8 @@ test('rechaza PDFs demasiado extensos, imágenes falsas y contenido con MIME inc
 test('acepta imágenes reales y comprueba los límites antes de invocar el modelo', async () => {
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jGZkAAAAASUVORK5CYII=', 'base64')
   assert.deepEqual(await inspectGenerationBytes(png, 'image/png'), {})
-  const large = new Uint8Array(4 * 1024 * 1024); large.set(png)
-  await assert.rejects(() => inspectGenerationBytes(large, 'image/png'), /3.75 MB/)
+  const large = new Uint8Array(10 * 1024 * 1024); large.set(png)
+  assert.deepEqual(await inspectGenerationBytes(large, 'image/png'), {})
+  const tooLarge = new Uint8Array(20 * 1024 * 1024 + 1); tooLarge.set(png)
+  await assert.rejects(() => inspectGenerationBytes(tooLarge, 'image/png'), /20 MB/)
 })

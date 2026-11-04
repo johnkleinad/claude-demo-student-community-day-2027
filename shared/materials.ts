@@ -1,5 +1,7 @@
 export const MAX_MATERIAL_BYTES = 20 * 1024 * 1024
 export const MAX_FILES_PER_BATCH = 10
+// Bedrock reads materials by S3 location, so generation is not bound by its 25 MB inline payload limit.
+export const MAX_GENERATION_TOTAL_BYTES = 100 * 1024 * 1024
 export const MATERIAL_FILE_ACCEPT = '.jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf'
 
 const extensions = {

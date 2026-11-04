@@ -106,9 +106,12 @@ adicional. No se adjuntó una política administrativa a las funciones.
 
 ## Límites de esta demo
 
-Storage sigue admitiendo archivos de 20 MiB. Para generación se aplican límites
-menores: 10 materiales, hasta 5 imágenes de 3.75 MiB y 8000 × 8000 píxeles, hasta
-5 PDF de 4.5 MiB cada uno, entre 1 y 100 páginas por PDF y 20 MiB totales.
+Storage y generación admiten archivos de 20 MiB: 10 materiales, hasta 5 imágenes
+de 8000 × 8000 píxeles, hasta 5 PDF de entre 1 y 100 páginas y 100 MiB totales.
+El agente valida los bytes descargados de S3 y luego pasa cada archivo a Bedrock
+por `s3Location`, no en línea: en línea, Nova 2 limita la petición a 25 MB y los
+bytes viajan en base64. Por S3 los documentos pueden sumar hasta 2 GB. Bedrock
+lee el objeto con el rol del Runtime, que ya tiene lectura sobre `materials/*`.
 Los límites se validan antes de invocar al agente; un modelo puede imponer
 restricciones adicionales. No se comprimen imágenes ni se dividen PDF automáticamente.
 
