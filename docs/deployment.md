@@ -13,15 +13,20 @@
 
 ## Desarrollo con sandbox
 
-Usar Node.js 22.12 o superior dentro de la versión 22 y credenciales AWS con
-permisos para el sandbox. El perfil y la región del proyecto aún no están
-confirmados. No reutilizar perfiles de otros proyectos por defecto.
+Usar Node.js 22.22 o superior dentro de la versión 22 y credenciales AWS con
+permisos para el sandbox. El perfil confirmado del proyecto es `student-cd`,
+en `us-east-1`. Conservar el identificador de sandbox usado para el ambiente
+existente. La etapa 04 añade recursos AgentCore: revisar los requisitos y
+bloqueos de cuenta en [Integración del agente](agent-integration.md) antes de
+desplegar esa rama.
 
 ```bash
+nvm install
+nvm use
 npm ci
 npm run check
 npm run synth:backend
-npm run sandbox -- --profile TU_PERFIL
+npm run sandbox -- --profile student-cd
 ```
 
 El perfil debe tener configurada la región elegida. El sandbox crea recursos
@@ -31,8 +36,14 @@ reales, observa cambios y genera `amplify_outputs.json` en la raíz. En otra ter
 npm run dev
 ```
 
+`.nvmrc` fija Node 22.23.4. El build de Hosting ejecuta `nvm install` y `nvm use`
+antes de instalar dependencias: seleccionar solo la versión mayor 22 puede
+elegir una versión preinstalada demasiado antigua para React Router. El
+lockfile debe validarse con `npm ci` desde una carpeta sin `node_modules`;
+una instalación incremental no detecta necesariamente resoluciones faltantes.
+
 Reiniciar Vite cuando se genere/cambie el archivo de outputs. Para desplegar una
-sola vez sin observación, usar `npm run sandbox:once -- --profile TU_PERFIL`.
+sola vez sin observación, usar `npm run sandbox:once -- --profile student-cd`.
 
 ## Hosting con GitHub
 
@@ -52,7 +63,7 @@ sola vez sin observación, usar `npm run sandbox:once -- --profile TU_PERFIL`.
 5. Ejecutar el build. La fase backend corre `ampx pipeline-deploy`, que genera
    los outputs de ese ambiente. Luego `build:hosting` comprueba los recursos y
    compila el frontend con ellos.
-6. Verificar la URL de la app y abrir directamente `/acerca`, además de recargarla.
+6. Verificar la URL de la app y abrir directamente `/decks/new`, además de recargarla.
    Comprobar que CSS, fuentes e imágenes se sirven como archivos, no como HTML.
 7. En la etapa 03, completar las pruebas reales de registro, confirmación por
    correo, login, aislamiento entre dos usuarios, carga y lectura privada de
