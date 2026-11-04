@@ -19,8 +19,9 @@ function fixture() {
     getDeck: async () => ({ id: 'deck-1', owner: userId, archived: false }),
     get: async (id) => records.get(id) ?? null,
     create: async (input: MaterialInput) => {
+      assert.ok(!('id' in input), 'AppSync rejects client-supplied IDs under field-level owner auth')
       creates++
-      const record = { ...input, owner: userId, createdAt: new Date().toISOString() }
+      const record = { ...input, id: `material-${creates}`, owner: userId, createdAt: new Date().toISOString() }
       records.set(record.id, record)
       return record
     },
@@ -32,15 +33,23 @@ function fixture() {
       records.set(id, next)
       return next
     },
+    setPath: async (id, storagePath) => {
+      const record = records.get(id)
+      assert.ok(record)
+      const next = { ...record, storagePath }
+      records.set(id, next)
+      return next
+    },
     object: async () => object,
     upload: async ({ file, contentType, onProgress }) => {
       assert.equal(records.get('material-1')?.uploadStatus, 'PENDING', 'Register before uploading any bytes')
+      assert.equal(records.get('material-1')?.storagePath, `materials/${identityId}/deck-1/material-1.pdf`, 'Assign the path before uploading')
       uploads++
       onProgress(50)
       object = { size: file.size, contentType }
     },
   }
-  const input = () => ({ id: 'material-1', deckId: 'deck-1', userId, file: file(), signal: new AbortController().signal,
+  const input = (materialId?: string) => ({ materialId, deckId: 'deck-1', userId, file: file(), signal: new AbortController().signal,
     onPhase: (phase: UploadPhase) => phases.push(phase), onProgress: (_percent: number) => {} })
   return { api, records, phases, statuses, input, uploads: () => uploads, creates: () => creates }
 }
@@ -61,13 +70,23 @@ test('un fallo de registro no sube objetos huérfanos', async () => {
   assert.equal(f.uploads(), 0)
 })
 
-test('recupera un registro creado antes de un timeout sin crear otro ID', async () => {
+test('no envía un ID propio y comunica el ID asignado por AppSync', async () => {
   const f = fixture()
-  const original = f.api.create
-  f.api.create = async (input) => { await original(input); throw new Error('Network timeout after commit') }
-  assert.equal((await uploadMaterial(f.input(), f.api)).uploadStatus, 'UPLOADED')
-  assert.equal(f.creates(), 1)
-  assert.equal(f.records.size, 1)
+  const ids: string[] = []
+  await uploadMaterial({ ...f.input(), onRecord: (id) => ids.push(id) }, f.api)
+  assert.deepEqual(ids, ['material-1'])
+})
+
+test('reanuda un registro sin ruta asignada tras un fallo intermedio', async () => {
+  const f = fixture()
+  f.api.setPath = async () => { throw new Error('Data unavailable') }
+  await assert.rejects(() => uploadMaterial(f.input(), f.api))
+  assert.equal(f.records.get('material-1')?.storagePath, '')
+  assert.equal(f.uploads(), 0)
+  const retry = fixture()
+  retry.records.set('material-1', f.records.get('material-1')!)
+  assert.equal((await uploadMaterial(retry.input('material-1'), retry.api)).uploadStatus, 'UPLOADED')
+  assert.equal(retry.creates(), 0)
 })
 
 test('reintentar un fallo de finalización reutiliza el objeto y no duplica la subida', async () => {
@@ -80,7 +99,7 @@ test('reintentar un fallo de finalización reutiliza el objeto y no duplica la s
   }
   await assert.rejects(() => uploadMaterial(f.input(), f.api), /ya está en el almacenamiento/)
   assert.equal(f.records.get('material-1')?.uploadStatus, 'PENDING')
-  assert.equal((await uploadMaterial(f.input(), f.api)).uploadStatus, 'UPLOADED')
+  assert.equal((await uploadMaterial(f.input('material-1'), f.api)).uploadStatus, 'UPLOADED')
   assert.equal(f.uploads(), 1)
   assert.equal(f.creates(), 1)
 })
@@ -108,7 +127,7 @@ test('reintentar con otro archivo no altera un material ya guardado', async () =
   const f = fixture()
   await uploadMaterial(f.input(), f.api)
   const attempts = f.statuses.length
-  const wrong = { ...f.input(), file: new File([file()], 'different.pdf', { type: 'application/pdf' }) }
+  const wrong = { ...f.input('material-1'), file: new File([file()], 'different.pdf', { type: 'application/pdf' }) }
   await assert.rejects(() => uploadMaterial(wrong, f.api), /archivo original/)
   assert.equal(f.records.get('material-1')?.uploadStatus, 'UPLOADED')
   assert.equal(f.statuses.length, attempts)

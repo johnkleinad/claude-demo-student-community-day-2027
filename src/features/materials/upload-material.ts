@@ -6,13 +6,15 @@ function checkAbort(signal: AbortSignal) {
 }
 
 export async function uploadMaterial(input: {
-  id: string
+  /** Existing record to resume. New records get their ID from AppSync, never from the client. */
+  materialId?: string
   deckId: string
   userId: string
   file: File
   signal: AbortSignal
   onPhase: (phase: UploadPhase) => void
   onProgress: (percent: number) => void
+  onRecord?: (materialId: string) => void
 }, api: MaterialUploadDependencies): Promise<StudyMaterial> {
   let record: StudyMaterial | null = null
   let uploaded = false
@@ -28,26 +30,34 @@ export async function uploadMaterial(input: {
     if (!deck || deck.id !== input.deckId || deck.owner !== input.userId || deck.archived) {
       throw new Error('No se puede añadir material a este deck.')
     }
-    const storagePath = createMaterialPath({ identityId: identity.identityId, deckId: input.deckId, materialId: input.id, contentType })
-    const assertRecord = (material: StudyMaterial) => {
-      if (material.id !== input.id || material.deckId !== input.deckId || material.owner !== input.userId ||
-          material.storagePath !== storagePath || material.contentType !== contentType ||
-          material.sizeBytes !== input.file.size || material.filename !== input.file.name) {
+    const pathFor = (materialId: string) => createMaterialPath({ identityId: identity.identityId, deckId: input.deckId, materialId, contentType })
+    // A record without a path was created but not finalized; it is only valid before the path is assigned.
+    const assertRecord = (material: StudyMaterial, allowMissingPath = false) => {
+      if ((input.materialId && material.id !== input.materialId) || material.deckId !== input.deckId || material.owner !== input.userId ||
+          !(material.storagePath === pathFor(material.id) || (allowMissingPath && material.storagePath === '')) ||
+          material.contentType !== contentType || material.sizeBytes !== input.file.size || material.filename !== input.file.name) {
         throw new Error('Selecciona el archivo original para reintentar este material.')
       }
     }
     checkAbort(input.signal)
-    record = await api.get(input.id)
-    if (record) assertRecord(record)
-    else {
+    if (input.materialId) {
+      record = await api.get(input.materialId)
+      if (!record) throw new Error('Este material ya no existe. Vuelve a seleccionar el archivo.')
+    } else {
+      // Field-level owner auth makes AppSync reject a client-supplied ID on create.
       try {
-        record = await api.create({ id: input.id, deckId: input.deckId, filename: input.file.name,
-          storagePath, contentType, sizeBytes: input.file.size, uploadStatus: 'PENDING' })
+        record = await api.create({ deckId: input.deckId, filename: input.file.name,
+          storagePath: '', contentType, sizeBytes: input.file.size, uploadStatus: 'PENDING' })
       } catch {
-        // The create may have committed before a network timeout. Reuse the same ID.
-        record = await api.get(input.id)
-        if (!record) throw new Error('No pudimos registrar el material. Inténtalo otra vez.')
+        throw new Error('No pudimos registrar el material. Inténtalo otra vez.')
       }
+      input.onRecord?.(record.id)
+    }
+    assertRecord(record, true)
+    const storagePath = pathFor(record.id)
+    if (record.storagePath !== storagePath) {
+      checkAbort(input.signal)
+      record = await api.setPath(record.id, storagePath)
       assertRecord(record)
     }
     if (record.uploadStatus === 'UPLOADED') return record

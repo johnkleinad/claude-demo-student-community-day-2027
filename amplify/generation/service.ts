@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { generationRequestSchema, validateGenerationResult } from '../../shared/generation'
-import { createMaterialPath } from '../../shared/materials'
+import { createMaterialPath, MAX_GENERATION_TOTAL_BYTES } from '../../shared/materials'
 import type { Job, Material, RequestDependencies, WorkerDependencies } from './types'
 
 export class GenerationError extends Error {}
@@ -58,7 +58,7 @@ export async function processGeneration(id: string, api: WorkerDependencies) {
     if (authorized.filter((item) => item.contentType.startsWith('image/')).length > 5) throw new GenerationError('Genera tarjetas con un máximo de 5 imágenes a la vez.')
     if (authorized.filter((item) => item.contentType === 'application/pdf').length > 5) throw new GenerationError('Genera tarjetas con un máximo de 5 PDF a la vez.')
     for (const material of authorized) materials.push(await api.prepare(material))
-    if (materials.reduce((sum, item) => sum + item.sizeBytes, 0) > 20 * 1024 * 1024) throw new GenerationError('Selecciona materiales que sumen hasta 20 MB para esta generación.')
+    if (materials.reduce((sum, item) => sum + item.sizeBytes, 0) > MAX_GENERATION_TOTAL_BYTES) throw new GenerationError('Selecciona materiales que sumen hasta 100 MB para esta generación.')
     const request = generationRequestSchema.parse({ deckId: job.deckId, materialIds: job.materialIds, requestId: job.requestId,
       preferences: { language: job.language, cardCount: job.cardCount, ...(job.focus ? { focus: job.focus } : {}) } })
     const result = validateGenerationResult(await api.invoke({ request, identityId: job.identityId, materials }), { materials, maxCards: job.cardCount })

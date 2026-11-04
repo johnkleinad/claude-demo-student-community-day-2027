@@ -48,7 +48,7 @@ export function GenerationPanel({ state, materials, uploading }: {
                   <span>{material.filename}</span><span className="generation-file-kind">{material.contentType === 'application/pdf' ? 'PDF' : 'IMG'}</span>
                 </label>)}
               </div> : <p className="generation-intro">Sube tu primer material para empezar.</p>}
-              <FieldDescription>Hasta 5 imágenes de 3.75 MB y 5 PDF de 4.5 MB. Máximo 20 MB en total.</FieldDescription>
+              <FieldDescription>Hasta 5 imágenes y 5 PDF de 20 MB cada uno. Máximo 100 MB en total.</FieldDescription>
             </Field>
             <div className="generation-preferences">
               <Field><FieldLabel htmlFor="card-count">Número de tarjetas</FieldLabel><Input id="card-count" name="cardCount" type="number" inputMode="numeric" min={1} max={50} defaultValue={10} required disabled={busy} /></Field>

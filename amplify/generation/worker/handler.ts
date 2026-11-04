@@ -3,6 +3,7 @@ import { BedrockAgentCoreClient, InvokeAgentRuntimeCommand } from '@aws-sdk/clie
 import { processGeneration, GenerationError } from '../service'
 import { claim, getDeck, getMaterial, finish, setting } from '../store'
 import { inspectGenerationBytes } from '../files'
+import { MAX_MATERIAL_BYTES } from '../../../shared/materials'
 
 const s3 = new S3Client({ region: process.env.AWS_REGION })
 const agent = new BedrockAgentCoreClient({ region: process.env.AWS_REGION, maxAttempts: 2,
@@ -13,8 +14,8 @@ export async function handler(event: { Records: Array<{ eventName?: string; dyna
     if (record.eventName !== 'INSERT' || !record.dynamodb?.Keys?.id?.S) continue
     await processGeneration(record.dynamodb.Keys.id.S, { claim, getDeck, getMaterial,
       async prepare(material) {
-        if (!Number.isSafeInteger(material.sizeBytes) || material.sizeBytes <= 0 || material.sizeBytes > 4.5 * 1024 * 1024) {
-          throw new GenerationError('Para generar, usa imágenes de hasta 3.75 MB y PDF de hasta 4.5 MB.')
+        if (!Number.isSafeInteger(material.sizeBytes) || material.sizeBytes <= 0 || material.sizeBytes > MAX_MATERIAL_BYTES) {
+          throw new GenerationError('Para generar, usa archivos de hasta 20 MB.')
         }
         const object = await s3.send(new GetObjectCommand({ Bucket: setting('MATERIAL_BUCKET'), Key: material.storagePath }))
         if (!object.Body) throw new GenerationError('No encontramos uno de los archivos. Vuelve a subirlo.')
@@ -29,7 +30,8 @@ export async function handler(event: { Records: Array<{ eventName?: string; dyna
       },
       async invoke(payload) {
         const response = await agent.send(new InvokeAgentRuntimeCommand({ agentRuntimeArn: setting('AGENT_RUNTIME_ARN'),
-          qualifier: 'demo', runtimeSessionId: `${payload.request.requestId}-${Date.now()}`,
+          // DEFAULT always tracks the latest Runtime version; sandbox hotswaps do not move custom endpoints.
+          qualifier: 'DEFAULT', runtimeSessionId: `${payload.request.requestId}-${Date.now()}`,
           contentType: 'application/json', accept: 'application/json', payload: Buffer.from(JSON.stringify(payload)) }))
         if (!response.response) throw new Error('Agent response missing')
         const text = await response.response.transformToString()

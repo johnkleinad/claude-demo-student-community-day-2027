@@ -95,7 +95,7 @@ export function configureGeneration(scope: Construct, resources: {
   resources.worker.addEnvironment('AGENT_RUNTIME_ARN', runtime.attrAgentRuntimeArn)
   resources.bucket.grantRead(resources.worker.resources.lambda, 'materials/*')
   resources.worker.resources.lambda.addToRolePolicy(new PolicyStatement({ actions: ['bedrock-agentcore:InvokeAgentRuntime'],
-    resources: [runtime.attrAgentRuntimeArn, endpoint.attrAgentRuntimeEndpointArn] }))
+    resources: [runtime.attrAgentRuntimeArn, endpoint.attrAgentRuntimeEndpointArn, `${runtime.attrAgentRuntimeArn}/runtime-endpoint/DEFAULT`] }))
   const failures = new Queue(scope, 'GenerationFailures', { encryption: QueueEncryption.SQS_MANAGED, retentionPeriod: Duration.days(14) })
   resources.worker.resources.lambda.addEventSource(new DynamoEventSource(tables.GenerationJob, { startingPosition: StartingPosition.TRIM_HORIZON,
     batchSize: 1, retryAttempts: 20, maxRecordAge: Duration.hours(4), onFailure: new SqsDlq(failures),

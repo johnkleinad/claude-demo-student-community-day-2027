@@ -12,11 +12,14 @@ export type StudyMaterial = {
   createdAt: string
 }
 
-export type MaterialInput = Omit<StudyMaterial, 'owner' | 'createdAt'>
+export type MaterialInput = Omit<StudyMaterial, 'id' | 'owner' | 'createdAt'>
 export type UploadPhase = 'preparing' | 'uploading' | 'saving'
 
 export type UploadJob = {
+  /** Local queue ID. */
   id: string
+  /** Server-assigned Material ID once the record exists. */
+  materialId?: string
   file: File
   contentType: string
   previewUrl?: string
@@ -31,6 +34,7 @@ export type MaterialUploadDependencies = {
   get: (id: string) => Promise<StudyMaterial | null>
   create: (input: MaterialInput) => Promise<StudyMaterial>
   status: (id: string, status: MaterialStatus) => Promise<StudyMaterial>
+  setPath: (id: string, storagePath: string) => Promise<StudyMaterial>
   object: (path: string) => Promise<{ size: number; contentType?: string } | null>
   upload: (input: { path: string; file: File; contentType: string; signal: AbortSignal; onProgress: (percent: number) => void }) => Promise<void>
 }

@@ -58,6 +58,11 @@ export const materialApi: MaterialUploadDependencies = {
     if (errors?.length || !data) throw new Error('No pudimos guardar el estado del material.')
     return present(data)
   },
+  async setPath(id, storagePath) {
+    const { data, errors } = await getDataClient().models.Material.update({ id, storagePath })
+    if (errors?.length || !data) throw new Error('No pudimos registrar la ruta del material.')
+    return present(data)
+  },
   async object(path) {
     try {
       const object = await getProperties({ path })

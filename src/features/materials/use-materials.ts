@@ -73,10 +73,10 @@ export function useMaterials(deckId: string) {
     try {
       for (const file of files) {
         if (!lifecycle.active) break
-        if (lifecycle.jobs.some((job) => job.id === resume?.id ||
+        if (lifecycle.jobs.some((job) => (resume && job.materialId === resume.id) ||
             (job.file.name === file.name && job.file.size === file.size && job.file.lastModified === file.lastModified))) continue
-        const id = resume?.id ?? createId()
-        changeJobs((current) => [...current, { id, file, contentType: '', status: 'checking', progress: 0 }])
+        const id = createId()
+        changeJobs((current) => [...current, { id, materialId: resume?.id, file, contentType: '', status: 'checking', progress: 0 }])
         try {
           const contentType = await inspectMaterialFile(file)
           if (!lifecycle.active) break
@@ -111,10 +111,12 @@ export function useMaterials(deckId: string) {
         lifecycle.controllers.set(job.id, controller)
         patchJob(job.id, { status: 'preparing', progress: 0, error: undefined })
         try {
-          const material = await uploadMaterial({ id: job.id, deckId, userId: user.userId, file: job.file,
+          const material = await uploadMaterial({ materialId: job.materialId, deckId, userId: user.userId, file: job.file,
             signal: controller.signal,
             onPhase: (status) => { if (lifecycle.active) patchJob(job.id, { status }) },
             onProgress: (progress) => { if (lifecycle.active) patchJob(job.id, { progress }) },
+            // Keep the server ID so a retry resumes this record instead of creating another.
+            onRecord: (materialId) => patchJob(job.id, { materialId }),
           }, materialApi)
           if (!lifecycle.active) break
           setMaterials((current) => [...current.filter((value) => value.id !== material.id), material]
